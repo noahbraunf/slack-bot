@@ -1,2 +1,4 @@
 .vscode
-venv/pyenv.cfg
+.idea
+__pycache__
+venv
