@@ -7,7 +7,7 @@ db = client.takendates
 users = db.users
 
 
-def reset_user(id, name, start: int, end: int):
+def reset_user(id, name, start: int = None, end: int = None):
     check_taken(start, end)
     user = {
         '_id': id,

@@ -10,7 +10,6 @@ from urllib.request import unquote
 
 app = Flask(__name__)
 
-value = 0
 slack_event_adapter = SlackEventAdapter(
     "9a3a31459067ead3f356e43c2214e3a9", "/slack/events", app)
 client = slack.WebClient(
@@ -24,7 +23,7 @@ def handle_message(event_data):
     message = event_data["event"]
 
     if message.get("user"):
-        if message.get("text") == "avail":
+        if message.get("text") == "available":
             user = message["user"]
             channel = message["channel"]
             message = f"Hello <@{user}>! select the days you will be available through below\n"
@@ -37,7 +36,6 @@ def handle_message(event_data):
 
 @app.route("/slack/interactive", methods=['GET', 'POST'])
 def handle_interaction():
-    global value
     raw_data = request.get_data()
 
     if raw_data is not None:
