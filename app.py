@@ -8,7 +8,6 @@ from slackeventsapi import SlackEventAdapter
 from BlockCreator import BlockBuilder
 
 app = Flask(__name__)
-
 """Need to find a way to make tokens env variables"""
 slack_event_adapter = SlackEventAdapter(
     "9a3a31459067ead3f356e43c2214e3a9", "/slack/events", app)
@@ -26,7 +25,8 @@ def handle_message(event_data):
     if message.get("user"):  # Makes sure that message is not sent by a bot
         if message.get("text") == "available":  # Command
             user = message["user"]  # Gets user id of user
-            channel = message["channel"]  # Gets channel that message was sent in
+            # Gets channel that message was sent in
+            channel = message["channel"]
             message = f"Hello <@{user}>! select the days you will be available through below\n"
 
             block = BlockBuilder().section(text=message).to_block()  # TODO: Design message
