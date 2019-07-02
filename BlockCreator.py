@@ -1,43 +1,67 @@
 from datetime import datetime
 
-"""A simple python script for creating slack blocks easily and quickly"""
-
 
 class BlockBuilder:
-    time = datetime.now()
+    """A simple python script for creating slack blocks easily and quickly"""
+    time = datetime.now()  # Gets the current time
 
     def __init__(self, block: list = []):
         # self.block = None
         self.block = block
 
     def divider(self):
+        """
+        Creates a slack divider
+
+        :return: BlockBuilder
+        """
         self.block.append({"type": "divider"})
         return BlockBuilder(self.block)
 
     def button(self, name: str = "Button", value: str = "value"):
+        """Creates a button"""
         self.block.append({"type": "actions", "elements": [{"type": "button", "text": {
-                          "type": "plain_text", "text": "Button", "emoji": True}, "value": "click_me_123"}]})
+            "type": "plain_text", "text": f"{name}", "emoji": True}, "value": f"{value}"}]})
         return BlockBuilder(self.block)
 
     def section(self, text: str = "text"):
+        """Creates a section"""
         self.block.append({"type": "section", "text": {
-                          "type": "mrkdwn", "text": text}})
+            "type": "mrkdwn", "text": text}})
         return BlockBuilder(self.block)
 
-    def many_buttons(self, names: list, values: list):
-        assert (len(names) and len(values)) != 0 and len(names) == len(values)
+    def many_buttons(self, name_value: tuple = (("Button1", "b1"), ("Button2", "b2"))):
+        """
+        Creates many buttons. Names and values have to be the same length
+
+        :name_value: a tuple of tuples of names of buttons and values
+        :return: BlockBuilder
+
+        usage: many_buttons(name_value=(("Button1", "b1"),...,("Button_n", "b_n"))
+        """
+        assert len(name_value) >= 1
 
         button_dict = {"type": "actions", "elements": []}
 
-        for name, value in zip(names, values):
+        for data in name_value:
             button_dict["elements"].append(
-                {"type": "button", "text": {"type": "plain_text", "text": f"{name}", "emoji": True},
-                 "value": f"{value}"})
+                {"type": "button", "text": {"type": "plain_text", "text": f"{data[0]}", "emoji": True},
+                 "value": f"{data[1]}"})
+
         self.block.append(button_dict)
 
         return BlockBuilder(self.block)
 
     def img(self, title: str = "image", img_data: tuple = ("url", "alt text")):
+        """
+        Creates an image
+
+        :param title: text above image
+        :param img_data: url and alt text
+        :rtype: BlockBuilder
+
+        :usage: img(tile="an image", img_data=("https://url.com/img.png", "text for when image doesn't load")
+        """
         assert len(img_data) == 2
 
         self.block.append({"type": "image", "title": {"type": "plain_text", "text": f"{title}", "emoji": True},
@@ -86,6 +110,10 @@ class BlockBuilder:
         return BlockBuilder(self.block)
 
     def overflow(self, text: str = "text", options: tuple = (())):
+        """
+
+        :rtype: BlockBuilder
+        """
         assert len(options) > 0
 
         builder = {"type": "section", "text": {"type": "overflow", "text": f"{text}"},
