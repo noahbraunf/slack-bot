@@ -1,4 +1,3 @@
-
 import re
 
 from pymongo import MongoClient
@@ -10,7 +9,7 @@ users = db.users
 
 
 def parse_date(date: str) -> int:
-    regex = r"(\d\d\d\d)\-(0[0-9]|1[0-2])\-(0[0-9]|1[0-9]|2[0-9]|3[0-1])"
+    regex = r"(\d{4,})?\-(0[0-9]|1[0-2])\-(0[0-9]|1[0-9]|2[0-9]|3[0-1])"
 
     regex = re.compile(regex)
     is_date = regex.match(date)
@@ -66,6 +65,7 @@ def taken(user_id: str, start: int, end: int, max_amount: int) -> bool:
         parsed_end = parse_date(data.get("end"))
         if data is not None:
             # if >=
-            if start >= parsed_start and end <= parsed_end and current_scheduled < max_amount:
+            if (start >= parsed_start and end <= parsed_end
+                    and current_scheduled < max_amount):
                 current_scheduled += 1
     return

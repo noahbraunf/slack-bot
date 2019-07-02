@@ -127,7 +127,23 @@ class BlockBuilder:
 
         return BlockBuilder(self.block)
 
-    def accessory(self):
+    def accessory(self, data: tuple):
+        def c_text(text="text", text_type="mrkdwn", emoji=True, verbatim=False):
+            return {"type": text_type, "text": text, "emoji": emoji, "verbatim": verbatim}
+
+        def c_img(url="your url here", alt_text="backup text"):
+            return {"type": "image", "image_url": url, "alt_text": alt_text}
+
+        builder = {"type": "context", "elements": []}
+
+        for block in data:
+            if block[0] == "text":
+                builder["elements"].append(c_text(text=block[1]))
+            if block[0] == "img":
+                builder["elements"].append(
+                    c_img(url=block[1], alt_text=block[2]))
+
+        self.block.append(builder)
 
         return BlockBuilder(block=self.block)
 
