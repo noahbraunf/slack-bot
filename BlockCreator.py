@@ -34,10 +34,10 @@ class BlockBuilder:
         """
         Creates many buttons. Names and values have to be the same length
 
-        :name_value: a tuple of tuples of names of buttons and values
-        :return: BlockBuilder
+        :param name_value: a tuple of tuples of names of buttons and values
+        :rtype: BlockBuilder
 
-        usage: many_buttons(name_value=(("Button1", "b1"),...,("Button_n", "b_n"))
+        :usage: many_buttons(name_value=(("Button1", "b1"),...,("Button_n", "b_n"))
         """
         assert len(name_value) >= 1
 
@@ -126,6 +126,10 @@ class BlockBuilder:
         self.block.append(builder)
 
         return BlockBuilder(self.block)
+
+    def accessory(self):
+
+        return BlockBuilder(block=self.block)
 
     def to_block(self):
         return self.block

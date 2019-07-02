@@ -9,7 +9,7 @@ from slackeventsapi import SlackEventAdapter
 from BlockCreator import BlockBuilder
 
 app = Flask(__name__)
-"""Need to find a way to make tokens env variables"""
+
 slack_event_adapter = SlackEventAdapter(  # ! Create environment variables for your slack signing secret
     os.environ.get("SLACK_SECRET"), "/slack/events", app)
 client = slack.WebClient(  # ! Create environment variables for your bot token secret

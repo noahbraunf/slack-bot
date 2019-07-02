@@ -38,16 +38,28 @@ def update_or_reset_user(user_id: str, name: str, start: int = None, end: int = 
     users.update_one({'_id': user_id}, {'$set': user}, upsert=True)
 
 
-# DEBUG CODE. #! REMOVE LATER
+# DEBUG CODE. # ! REMOVE LATER
 # for document in users.find():
 #     pprint(document)
 # test_dates = ("2019-10-12", "2012-04-33", "2019-22-3", "2019-11-09", "2222-12-31")
 # parse_dates(test_dates)
 
+def check_day():
+    pass
+
 
 def taken(user_id: str, start: int, end: int, max_amount: int) -> bool:
+    """
+    Checks if dates are taken
+
+    :param user_id: originally pulled from slack
+    :param start: start date of availability
+    :param max_amount: start date of availability
+    :param end: end date of availability
+    :rtype: bool
+    """
     assert user_id is not None and start <= end
-    """Checks if dates are taken"""
+
     current_scheduled = None  # ! TODO: make separate
     for data in users.find():
         parsed_start = parse_date(data.get("start"))
