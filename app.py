@@ -1,4 +1,5 @@
 import json
+import os
 from urllib.request import unquote
 
 import slack
@@ -9,10 +10,10 @@ from BlockCreator import BlockBuilder
 
 app = Flask(__name__)
 """Need to find a way to make tokens env variables"""
-slack_event_adapter = SlackEventAdapter(
-    "9a3a31459067ead3f356e43c2214e3a9", "/slack/events", app)
-client = slack.WebClient(
-    "xoxb-675245215444-666074695570-4R88WCBuW3D1CkblzgSFk9T5")
+slack_event_adapter = SlackEventAdapter(  # ! Create environment variables for your slack signing secret
+    os.environ.get("SLACK_SECRET"), "/slack/events", app)
+client = slack.WebClient(  # ! Create environment variables for your bot token secret
+    os.environ.get("SLACK_BOT_SECRET"))
 
 
 @slack_event_adapter.on(event="message")

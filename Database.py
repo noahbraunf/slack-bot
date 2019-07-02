@@ -28,7 +28,7 @@ def update_or_reset_user(user_id: str, name: str, start: int = None, end: int = 
     """Resets user if {start} and {end} field are taken. Otherwise changes the values of the user"""
     if start is not None and end is not None:
         assert start <= end
-    taken(user_id, start, end)
+    taken(user_id, start, end, 3)
     user = {
         '_id': user_id,
         'name': name,
@@ -55,5 +55,5 @@ def taken(user_id: str, start: int, end: int, max_amount: int) -> bool:
         if data is not None:
             # if >=
             if start >= parsed_start and end <= parsed_end and current_scheduled < max_amount:
-                pass
+                current_scheduled += 1
     return
