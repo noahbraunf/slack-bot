@@ -86,23 +86,22 @@ class MongoBuffer():
                  host="localhost",
                  port=27017):
         self.buffer = []
-        self.database = MongoClient(host, port).dates
+        self.database = MongoClient(host, port)[database]
         self.BUFFER_SIZE = buffer_size
 
-    def append(self, other):
+    def append(self, other: [MongoBuffer, list]):
         if other is MongoBuffer:
-            if len(self.buffer) + len(other.buffer) > self.BUFFER_SIZE:
+            if len(self + other) > self.BUFFER_SIZE:
                 raise TypeError
             else:
-                self.buffer = [*self.buffer, *other.buffer]
+                self.buffer = self + other
         if other is list:
             if len(self.buffer) + len(other) > self.BUFFER_SIZE:
                 raise TypeError
             else:
-                self.buffer = [*self.buffer, *other]
+                self.buffer = [*self.buffer + other]
 
     def remove_duplicates(self, id_list=None):
-        assert self.buffer > 0
         if id_list is None:
             id_list = self.get_ids()
         nd_set = set(self.buffer)
@@ -137,8 +136,8 @@ class MongoBuffer():
             ids.append(document.get("id"))
         return ids
 
-    def push_to_collection(self, collection):
-        col = self.database["collection"]
+    def push_to_collection(self, collection: str):
+        col = self.database[collection]
 
         if self.is_duplicates():
             self.remove_duplicates(self.get_ids(self.buffer))
@@ -154,8 +153,13 @@ class MongoBuffer():
                 self.buffer = [*self.buffer, *other.buffer]
                 self.remove_duplicates(self.buffer)
         if other is list:
+            for documents in other:
+                assert documents is dict
             if len(self.buffer) + len(other) > self.BUFFER_SIZE:
                 raise TypeError
             else:
                 self.buffer = [*self.buffer, *other]
                 self.remove_duplicates()
+
+    def __len__(self) -> int:
+        return len(self.buffer)
