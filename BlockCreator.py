@@ -20,17 +20,35 @@ class BlockBuilder:
 
     def button(self, name: str = "Button", value: str = "value"):
         """Creates a button"""
-        self.block.append({"type": "actions", "elements": [{"type": "button", "text": {
-            "type": "plain_text", "text": f"{name}", "emoji": True}, "value": f"{value}"}]})
+        self.block.append({
+            "type":
+            "actions",
+            "elements": [{
+                "type": "button",
+                "text": {
+                    "type": "plain_text",
+                    "text": f"{name}",
+                    "emoji": True
+                },
+                "value": f"{value}"
+            }]
+        })
         return BlockBuilder(block=self.block)
 
     def section(self, text: str = "text"):
         """Creates a section"""
-        self.block.append({"type": "section", "text": {
-            "type": "mrkdwn", "text": text}})
+        self.block.append({
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": text
+            }
+        })
         return BlockBuilder(block=self.block)
 
-    def many_buttons(self, name_value: tuple = (("Button1", "b1"), ("Button2", "b2"))):
+    def many_buttons(self,
+                     name_value: tuple = (("Button1", "b1"), ("Button2",
+                                                              "b2"))):
         """
         Creates many buttons. Names and values have to be the same length
 
@@ -44,9 +62,15 @@ class BlockBuilder:
         button_dict = {"type": "actions", "elements": []}
 
         for data in name_value:
-            button_dict["elements"].append(
-                {"type": "button", "text": {"type": "plain_text", "text": f"{data[0]}", "emoji": True},
-                 "value": f"{data[1]}"})
+            button_dict["elements"].append({
+                "type": "button",
+                "text": {
+                    "type": "plain_text",
+                    "text": f"{data[0]}",
+                    "emoji": True
+                },
+                "value": f"{data[1]}"
+            })
 
         self.block.append(button_dict)
 
@@ -64,46 +88,98 @@ class BlockBuilder:
         """
         assert len(img_data) == 2
 
-        self.block.append({"type": "image", "title": {"type": "plain_text", "text": f"{title}", "emoji": True},
-                           "image_url": f"{img_data[0]}",
-                           "alt_text": f"{img_data[1]}"
-                           })
+        self.block.append({
+            "type": "image",
+            "title": {
+                "type": "plain_text",
+                "text": f"{title}",
+                "emoji": True
+            },
+            "image_url": f"{img_data[0]}",
+            "alt_text": f"{img_data[1]}"
+        })
 
         return BlockBuilder(block=self.block)
 
-    def img_section(self, text: str = "text", img_data: tuple = ("url", "alt text")):
+    def img_section(self,
+                    text: str = "text",
+                    img_data: tuple = ("url", "alt text")):
         assert len(img_data) == 2
 
-        self.block.append({"type": "section", "text": {"type": "mrkdwn", "text": f"{text}"},
-                           "accessory": {"type": "image",
-                                         "image_url": f"{img_data[0]}",
-                                         "alt_text": f"{img_data[1]}"}})
+        self.block.append({
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": f"{text}"
+            },
+            "accessory": {
+                "type": "image",
+                "image_url": f"{img_data[0]}",
+                "alt_text": f"{img_data[1]}"
+            }
+        })
 
         return BlockBuilder(block=self.block)
 
-    def datepicker(self, text: str = "text", year: int = time.year, month: int = time.month,
+    def datepicker(self,
+                   text: str = "text",
+                   year: int = time.year,
+                   month: int = time.month,
                    day: int = time.day):
         assert month <= 12
         assert day <= 31
 
-        self.block.append({"type": "section", "text": {"type": "mrkdwn", "text": f"{text}"},
-                           "accessory": {"type": "datepicker", "initial_date": f"{year}-{month}-{day}",
-                                         "placeholder": {"type": "plain_text", "text": "Select a date",
-                                                         "emoji": True}}})
+        self.block.append({
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": f"{text}"
+            },
+            "accessory": {
+                "type": "datepicker",
+                "initial_date": f"{year}-{month}-{day}",
+                "placeholder": {
+                    "type": "plain_text",
+                    "text": "Select a date",
+                    "emoji": True
+                }
+            }
+        })
 
         return BlockBuilder(block=self.block)
 
-    def dropdown(self, section_text: str = "text", button_text: str = "Select an item", options: tuple = (())):
+    def dropdown(self,
+                 section_text: str = "text",
+                 button_text: str = "Select an item",
+                 options: tuple = (())):
         assert len(options) > 0
 
-        builder = {"type": "section", "text": {"type": "mrkdwn", "text": f"{section_text}"},
-                   "accessory": {"type": "static_select",
-                                 "placeholder": {"type": "plain_text", "text": f"{button_text}", "emoji": True},
-                                 "options": []}}
+        builder = {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": f"{section_text}"
+            },
+            "accessory": {
+                "type": "static_select",
+                "placeholder": {
+                    "type": "plain_text",
+                    "text": f"{button_text}",
+                    "emoji": True
+                },
+                "options": []
+            }
+        }
 
         for data in options:
-            builder["accessory"]["options"].append(
-                {"text": {"type": "plain_text", "text": f"{data[0]}", "emoji": True}, "value": f"{data[1]}"})
+            builder["accessory"]["options"].append({
+                "text": {
+                    "type": "plain_text",
+                    "text": f"{data[0]}",
+                    "emoji": True
+                },
+                "value": f"{data[1]}"
+            })
 
         self.block.append(builder)
 
@@ -116,20 +192,41 @@ class BlockBuilder:
         """
         assert len(options) > 0
 
-        builder = {"type": "section", "text": {"type": "overflow", "text": f"{text}"},
-                   "accessory": {"type": "overflow", "options": []}}
+        builder = {
+            "type": "section",
+            "text": {
+                "type": "overflow",
+                "text": f"{text}"
+            },
+            "accessory": {
+                "type": "overflow",
+                "options": []
+            }
+        }
 
         for data in options:
-            builder["accessory"]["options"].append(
-                {"text": {"type": "plain_text", "text": f"{data[0]}", "emoji": True}, "value": f"{data[1]}"})
+            builder["accessory"]["options"].append({
+                "text": {
+                    "type": "plain_text",
+                    "text": f"{data[0]}",
+                    "emoji": True
+                },
+                "value": f"{data[1]}"
+            })
 
         self.block.append(builder)
 
         return BlockBuilder(block=self.block)
 
     def context(self, data: tuple):
-        def c_text(text="text", text_type="mrkdwn", emoji=True, verbatim=False):
-            return {"type": text_type, "text": text, "emoji": emoji, "verbatim": verbatim}
+        def c_text(text="text", text_type="mrkdwn", emoji=True,
+                   verbatim=False):
+            return {
+                "type": text_type,
+                "text": text,
+                "emoji": emoji,
+                "verbatim": verbatim
+            }
 
         def c_img(url="your url here", alt_text="backup text"):
             return {"type": "image", "image_url": url, "alt_text": alt_text}
@@ -155,7 +252,10 @@ class BlockBuilder:
 
 
 if __name__ == "__main__":
-    slack_block = BlockBuilder().section(text="test").divider().button(name="test", value="test").img_section(
-        text="hello", img_data=("text.com/example.jpg", "test")).divider().context(
-            ("text", "this is a test"), ("img", "test_url.com/test.jpg", "test text")).to_block()
+    slack_block = BlockBuilder().section(text="test").divider().button(
+        name="test", value="test").img_section(
+            text="hello",
+            img_data=("text.com/example.jpg", "test")).divider().context(
+                ("text", "this is a test"),
+                ("img", "test_url.com/test.jpg", "test text")).to_block()
     print(slack_block)

@@ -18,15 +18,22 @@ def parse_date(date: str) -> int:
         int_dates = int(date.replace("-", ""))
     else:
         raise SyntaxError(
-            f"Invalid Syntax: The date inputed ({date}) should be in YYYY-MM-DD format")
+            f"Invalid Syntax: The date inputed ({date}) should be in YYYY-MM-DD format"
+        )
     # pprint(int_dates)
     return int_dates
 
 
-def update_or_reset_user(user_id: str, name: str, start: int = None, end: int = None):
+def update_or_reset_user(user_id: str,
+                         name: str,
+                         start: int = None,
+                         end: int = None):
     """Resets user if {start} and {end} field are taken. Otherwise changes the values of the user"""
     if start is not None and end is not None:
         assert start <= end
+    else:
+        raise ValueError(
+            f"start ({start}) or end ({end}) value cannot be none")
     taken(user_id, start, end, 3)
     user = {
         '_id': user_id,
@@ -42,6 +49,7 @@ def update_or_reset_user(user_id: str, name: str, start: int = None, end: int = 
 #     pprint(document)
 # test_dates = ("2019-10-12", "2012-04-33", "2019-22-3", "2019-11-09", "2222-12-31")
 # parse_dates(test_dates)
+
 
 def check_day():
     pass
@@ -72,7 +80,11 @@ def taken(user_id: str, start: int, end: int, max_amount: int) -> bool:
 
 
 class MongoBuffer():
-    def __init__(self, database: str = "users", buffer_size: int = 3, host="localhost", port=27017):
+    def __init__(self,
+                 database: str = "users",
+                 buffer_size: int = 3,
+                 host="localhost",
+                 port=27017):
         self.buffer = []
         self.database = MongoClient(host, port).dates
         self.BUFFER_SIZE = buffer_size
@@ -89,14 +101,15 @@ class MongoBuffer():
             else:
                 self.buffer = [*self.buffer, *other]
 
-    def remove_duplicates(self, d_list):
+    def remove_duplicates(self, id_list=None):
         assert self.buffer > 0
+        if id_list is None:
+            id_list = self.get_ids()
         nd_set = set(self.buffer)
-        if len(d_list) == len(nd_set):
-            # TODO: !? #[ ++<| <~~ *** ~~> |>++ ]# ?! :ODOT #
+        if len(id_list) == len(nd_set):
             raise TypeError("no duplicates to remove!")
         else:
-            dif = sorted(d_list) - nd_set
+            dif = sorted(id_list) - nd_set
             print(dif)  # ! DEBUG
 
             assert len(self.buffer) >= dif
@@ -109,20 +122,26 @@ class MongoBuffer():
 
     def is_duplicates(self, remove_dupes=False):
         assert self.buffer > 0
-        ids = []
-        for document in self.buffer:
-            ids.append(document.get("_id"))
+        ids = self.get_ids(self.buffer)
         if ids != set(ids):
             if remove_dupes:
-                remove_duplicates(ids, set(ids))
+                self.remove_duplicates(ids)
             return True
         return False
+
+    def get_ids(self, buffer: list = None) -> list:
+        if buffer is None:
+            buffer = self.buffer
+        ids = []
+        for document in buffer:
+            ids.append(document.get("id"))
+        return ids
 
     def push_to_collection(self, collection):
         col = self.database["collection"]
 
-        if is_duplicates():
-            self.remove_duplicates()
+        if self.is_duplicates():
+            self.remove_duplicates(self.get_ids(self.buffer))
             raise TypeError
         else:
             col.insert_many(self.buffer)
@@ -133,10 +152,10 @@ class MongoBuffer():
                 raise TypeError
             else:
                 self.buffer = [*self.buffer, *other.buffer]
-                remove_duplicates(self.buffer)
+                self.remove_duplicates(self.buffer)
         if other is list:
             if len(self.buffer) + len(other) > self.BUFFER_SIZE:
                 raise TypeError
             else:
                 self.buffer = [*self.buffer, *other]
-                remove_duplicates(self.buffer)
+                self.remove_duplicates()

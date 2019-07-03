@@ -1,3 +1,4 @@
+#!./env/bin/python3
 import json
 import os
 from urllib.request import unquote
@@ -30,10 +31,14 @@ def handle_message(event_data):
             channel = message["channel"]
             message = f"Hello <@{user}>! select the days you will be available through below\n"
 
-            block = BlockBuilder().section(text=message).to_block()  # TODO: Design message
+            block = BlockBuilder().section(
+                text=message).to_block()  # TODO: Design message
 
-            client.api_call(api_method="chat.postMessage", json={
-                "channel": channel, "blocks": block})
+            client.api_call(api_method="chat.postMessage",
+                            json={
+                                "channel": channel,
+                                "blocks": block
+                            })
 
 
 @app.route("/slack/interactive", methods=['GET', 'POST'])
