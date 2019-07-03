@@ -42,7 +42,7 @@ def handle_interaction():
     raw_data = request.get_data()  # Gets the data
 
     if raw_data is not None:
-        # converts url-ified JSON into readable json
+        # converts url-ified JSON into readable json # ! UNUSED
         req = json.loads(unquote(raw_data.decode()).replace("payload=", ""))
     else:
         return 'action unsuccessful: No Data Recieved'

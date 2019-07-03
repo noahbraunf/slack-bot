@@ -3,7 +3,7 @@ import re
 from pymongo import MongoClient
 
 client = MongoClient('localhost', 27017)
-db = client.takendates
+db = client.dates
 
 users = db.users
 
@@ -31,8 +31,8 @@ def update_or_reset_user(user_id: str, name: str, start: int = None, end: int = 
     user = {
         '_id': user_id,
         'name': name,
-        'start_date': start,
-        'end_date': end
+        'start_date': parse_date(start),
+        'end_date': parse_date(end)
     }
     users.update_one({'_id': user_id}, {'$set': user}, upsert=True)
 
@@ -64,8 +64,79 @@ def taken(user_id: str, start: int, end: int, max_amount: int) -> bool:
         parsed_start = parse_date(data.get("start"))
         parsed_end = parse_date(data.get("end"))
         if data is not None:
-            # if >=
+
             if (start >= parsed_start and end <= parsed_end
                     and current_scheduled < max_amount):
                 current_scheduled += 1
     return
+
+
+class MongoBuffer():
+    def __init__(self, database: str = "users", buffer_size: int = 3, host="localhost", port=27017):
+        self.buffer = []
+        self.database = MongoClient(host, port).dates
+        self.BUFFER_SIZE = buffer_size
+
+    def append(self, other):
+        if other is MongoBuffer:
+            if len(self.buffer) + len(other.buffer) > self.BUFFER_SIZE:
+                raise TypeError
+            else:
+                self.buffer = [*self.buffer, *other.buffer]
+        if other is list:
+            if len(self.buffer) + len(other) > self.BUFFER_SIZE:
+                raise TypeError
+            else:
+                self.buffer = [*self.buffer, *other]
+
+    def remove_duplicates(self, d_list):
+        assert self.buffer > 0
+        nd_set = set(self.buffer)
+        if len(d_list) == len(nd_set):
+            # TODO: !? #[ ++<| <~~ *** ~~> |>++ ]# ?! :ODOT #
+            raise TypeError("no duplicates to remove!")
+        else:
+            dif = sorted(d_list) - nd_set
+            print(dif)  # ! DEBUG
+
+            assert len(self.buffer) >= dif
+            u_buffer = []
+            for index, r_id in enumerate(dif):
+                if self.buffer[index].get("_id") != r_id:
+                    u_buffer.append(self.buffer[index])
+
+            self.buffer = u_buffer
+
+    def is_duplicates(self, remove_dupes=False):
+        assert self.buffer > 0
+        ids = []
+        for document in self.buffer:
+            ids.append(document.get("_id"))
+        if ids != set(ids):
+            if remove_dupes:
+                remove_duplicates(ids, set(ids))
+            return True
+        return False
+
+    def push_to_collection(self, collection):
+        col = self.database["collection"]
+
+        if is_duplicates():
+            self.remove_duplicates()
+            raise TypeError
+        else:
+            col.insert_many(self.buffer)
+
+    def __add__(self, other):
+        if other is MongoBuffer:
+            if len(self.buffer) + len(other.buffer) > self.BUFFER_SIZE:
+                raise TypeError
+            else:
+                self.buffer = [*self.buffer, *other.buffer]
+                remove_duplicates(self.buffer)
+        if other is list:
+            if len(self.buffer) + len(other) > self.BUFFER_SIZE:
+                raise TypeError
+            else:
+                self.buffer = [*self.buffer, *other]
+                remove_duplicates(self.buffer)

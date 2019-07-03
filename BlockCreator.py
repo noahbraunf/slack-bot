@@ -16,19 +16,19 @@ class BlockBuilder:
         :return: BlockBuilder
         """
         self.block.append({"type": "divider"})
-        return BlockBuilder(self.block)
+        return BlockBuilder(block=self.block)
 
     def button(self, name: str = "Button", value: str = "value"):
         """Creates a button"""
         self.block.append({"type": "actions", "elements": [{"type": "button", "text": {
             "type": "plain_text", "text": f"{name}", "emoji": True}, "value": f"{value}"}]})
-        return BlockBuilder(self.block)
+        return BlockBuilder(block=self.block)
 
     def section(self, text: str = "text"):
         """Creates a section"""
         self.block.append({"type": "section", "text": {
             "type": "mrkdwn", "text": text}})
-        return BlockBuilder(self.block)
+        return BlockBuilder(block=self.block)
 
     def many_buttons(self, name_value: tuple = (("Button1", "b1"), ("Button2", "b2"))):
         """
@@ -50,7 +50,7 @@ class BlockBuilder:
 
         self.block.append(button_dict)
 
-        return BlockBuilder(self.block)
+        return BlockBuilder(block=self.block)
 
     def img(self, title: str = "image", img_data: tuple = ("url", "alt text")):
         """
@@ -69,7 +69,7 @@ class BlockBuilder:
                            "alt_text": f"{img_data[1]}"
                            })
 
-        return BlockBuilder(self.block)
+        return BlockBuilder(block=self.block)
 
     def img_section(self, text: str = "text", img_data: tuple = ("url", "alt text")):
         assert len(img_data) == 2
@@ -79,7 +79,7 @@ class BlockBuilder:
                                          "image_url": f"{img_data[0]}",
                                          "alt_text": f"{img_data[1]}"}})
 
-        return BlockBuilder(self.block)
+        return BlockBuilder(block=self.block)
 
     def datepicker(self, text: str = "text", year: int = time.year, month: int = time.month,
                    day: int = time.day):
@@ -91,7 +91,7 @@ class BlockBuilder:
                                          "placeholder": {"type": "plain_text", "text": "Select a date",
                                                          "emoji": True}}})
 
-        return BlockBuilder(self.block)
+        return BlockBuilder(block=self.block)
 
     def dropdown(self, section_text: str = "text", button_text: str = "Select an item", options: tuple = (())):
         assert len(options) > 0
@@ -107,7 +107,7 @@ class BlockBuilder:
 
         self.block.append(builder)
 
-        return BlockBuilder(self.block)
+        return BlockBuilder(block=self.block)
 
     def overflow(self, text: str = "text", options: tuple = (())):
         """
@@ -125,9 +125,9 @@ class BlockBuilder:
 
         self.block.append(builder)
 
-        return BlockBuilder(self.block)
+        return BlockBuilder(block=self.block)
 
-    def accessory(self, data: tuple):
+    def context(self, data: tuple):
         def c_text(text="text", text_type="mrkdwn", emoji=True, verbatim=False):
             return {"type": text_type, "text": text, "emoji": emoji, "verbatim": verbatim}
 
@@ -156,5 +156,6 @@ class BlockBuilder:
 
 if __name__ == "__main__":
     slack_block = BlockBuilder().section(text="test").divider().button(name="test", value="test").img_section(
-        text="hello", img_data=("text.com/example.jpg", "test")).divider()
+        text="hello", img_data=("text.com/example.jpg", "test")).divider().context(
+            ("text", "this is a test"), ("img", "test_url.com/test.jpg", "test text")).to_block()
     print(slack_block)
