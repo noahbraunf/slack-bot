@@ -1,6 +1,8 @@
 #!./env/bin/python3
 import json
 import os
+from os.path import join, dirname
+from dotenv import load_dotenv
 from urllib.request import unquote
 
 import slack
@@ -11,10 +13,13 @@ from BlockCreator import BlockBuilder
 
 app = Flask(__name__)
 
+dotenv_path = join(dirname(__file__), '.env')
+load_dotenv(dotenv_path)
+
 slack_event_adapter = SlackEventAdapter(  # ! Create environment variables for your slack signing secret
-    os.environ.get("SLACK_SECRET"), "/slack/events", app)
+    os.getenv('SLACK_SECRET'), "/slack/events", app)
 client = slack.WebClient(  # ! Create environment variables for your bot token secret
-    os.environ.get("SLACK_BOT_SECRET"))
+    os.getenv('SLACK_BOT_SECRET'))
 
 
 @slack_event_adapter.on(event="message")
