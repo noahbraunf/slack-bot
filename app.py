@@ -7,7 +7,7 @@ from pprint import pprint
 import slack
 from flask import Flask, request
 from slackeventsapi import SlackEventAdapter
-
+from Database import MongoTools, parse_date, update_or_reset_user
 from BlockCreator import BlockBuilder
 from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
@@ -23,7 +23,7 @@ slack_event_adapter = SlackEventAdapter(  # ! Create environment variables for y
 client = slack.WebClient(  # ! Create environment variables for your bot token secret
     os.getenv('SLACK_BOT_SECRET'))
 scheduler = BackgroundScheduler()
-
+db = MongoTools(buffer_size=4)
 atexit.register(lambda: scheduler.shutdown())
 
 
@@ -41,7 +41,7 @@ def handle_message(event_data):
             channel = message.get("channel")
             text = f"Hello <@{user}>! select the days you will be available through below"
 
-            block = BlockBuilder().section(
+            block = BlockBuilder([]).section(
                 text=text).divider().datepicker(
                     text="Start Date").datepicker(
                         text="End Date").many_buttons(
@@ -53,6 +53,7 @@ def handle_message(event_data):
                                 "channel": channel,
                                 "blocks": block
                             })
+            block = None
 
 
 @app.route("/slack/interactive", methods=['GET', 'POST'])
@@ -63,23 +64,45 @@ def handle_interaction():
     if raw_data is not None:
         # converts url-ified JSON payload into readable json
         req = json.loads(unquote(raw_data.decode()).replace("payload=", ""))
-        user = req.get('user').get('id')
+        pprint(req)
+        message = req.get('message')
+        user = req.get('user')
+
         channel = req.get('channel').get('id')
-        m_ts = req.get('message').get('ts')
+        m_ts = message.get('ts')
         actions = req.get('actions')
     else:
         return 'action unsuccessful: No Data Recieved'  # Slack Problem
 
-    if actions[0].get('type') == 'button':
+    if actions[0].get('type') == 'button' and actions[0].get('value') == "yes" or actions[0].get('value') == "no":
         value = actions[0].get('value')
-        handle_button_click(value, user, channel, m_ts)
+        datepickers = []
+        # pprint(message.get('blocks'))
+        pprint(len(message.get('blocks')))
+        for data in message.get('blocks'):
+            if len(datepickers) >= 2:
+                break
+            try:
+                if data.get('text').get('text') and data.get('accessory'):  # ! Horrible Code :(
+                    datepickers.append(
+                        data.get('accessory').get('initial_date'))
+            except:
+                continue
+        start_date, end_date = handle_date_selection(
+            datepickers[0], datepickers[1])
+        db.append({"user_id": user.get('id'), "name": user.get('name'),
+                   "start_date": start_date, "end_date": end_date})
+        pprint(db)
+        handle_button_click(value, user.get(
+            'id'), channel, m_ts, user.get('name'))
 
     return 'action successful'
 
 
-def handle_button_click(value, user, channel, ts):
+def handle_button_click(value, user, channel, ts, name):
     if value == 'no' or 'yes':
         if value == 'yes':
+            #update_or_reset_user(user_id=user, name=name)
             client.api_call("chat.postEphemeral", json={"attachments": [
                             {"text": ":tada: *Scheduling...* :tada:\nPlease allow up to 30 minutes for the dates to be updated/scheduled"}], "user": user,
                 "channel": channel})
@@ -87,8 +110,15 @@ def handle_button_click(value, user, channel, ts):
             client.api_call("chat.postEphemeral", json={"attachments": [
                             {"pretext": ":tada: *Deleting message...* :tada:", "text": "No longer scheduling"}], "user": user,
                 "channel": channel})
-        client.api_call("chat.delete", json={
-            "channel": channel, "ts": ts})
+        # client.api_call("chat.delete", json={ # ! Disabled for debug reasons
+        #     "channel": channel, "ts": ts})
+
+
+def handle_date_selection(start_date, end_date) -> tuple:
+    s = parse_date(start_date)[1]
+    e = parse_date(end_date)[1]
+
+    return (s, e)
 
 
 if __name__ == "__main__":

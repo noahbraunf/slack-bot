@@ -1,7 +1,7 @@
 import re
 
 from pymongo import MongoClient
-from typing import List, Dict, Tuple
+
 client = MongoClient('localhost', 27017)
 db = client.dates
 
@@ -9,6 +9,12 @@ users = db.users
 
 
 def parse_date(date: str) -> tuple:
+    """
+    Converts date-string into a tuple, which contains an integer and a split date
+
+    :param date: A date-string in the format 'YYYY-MM-DD'
+    :rtype: tuple
+    """
     regex = r"(\d{4})?\-(0[0-9]|1[0-2])?\-(0[0-9]|1[0-9]|2[0-9]|3[0-1])?"
 
     regex = re.compile(regex)
@@ -64,36 +70,41 @@ def taken(user_id: str, start: int, end: int, max_amount: int) -> bool:
     """
     assert user_id is not None and start <= end
 
-    current_scheduled = None  # ! TODO: make separate
-    for data in users.find():
+    current_scheduled = 0
+    for data in users.find({}):
         parsed_start = parse_date(data.get("start"))
         parsed_end = parse_date(data.get("end"))
         if data is not None:
-
             if (start >= parsed_start and end <= parsed_end
                     and current_scheduled < max_amount):
                 current_scheduled += 1
-    return
+    return True if current_scheduled <= max_amount else False
 
 
 class MongoTools():
+    """
+    Helper functions for MongoDB, specifically for slack
+    """
+
     def __init__(self,
                  database: str = "users",
                  buffer_size: int = 3,
                  host="localhost",
                  port=27017):
-        self.buffer = List[dict]
+        self.buffer = []
         self.database = MongoClient(host, port)[database]
         self.BUFFER_SIZE = buffer_size
+
+    def clear_buffer(self):
+        self.buffer.clear()
 
     def append(self, other):
         for documents in other:
             assert documents is dict
         if len(self.buffer) + len(other) > self.BUFFER_SIZE:
-            raise OverflowError
-        else:
-            self.buffer = [*self.buffer, *other]
-            self.remove_duplicates()
+            self.push_to_collection("scheduled_users")
+        self.buffer = [*self.buffer, *other]
+        self.remove_duplicates()
 
     def remove_duplicates(self, id_list=None):
         if id_list is None:
@@ -103,12 +114,12 @@ class MongoTools():
             raise TypeError("no duplicates to remove!")
         else:
             dif = sorted(id_list) - nd_set
-            print(dif)  # ! DEBUG
+            # print(dif)  # ! DEBUG
 
             assert len(self.buffer) >= dif
             u_buffer = []
             for index, r_id in enumerate(dif):
-                if self.buffer[index].get("_id") != r_id:
+                if self.buffer[index].get("user_id") != r_id:
                     u_buffer.append(self.buffer[index])
 
             self.buffer = u_buffer
@@ -122,7 +133,7 @@ class MongoTools():
             return True
         return False
 
-    def get_ids(self, buffer: List[dict] = None) -> List[str]:
+    def get_ids(self, buffer: list = None) -> list:
         if buffer is None:
             buffer = self.buffer
         ids = []
@@ -135,20 +146,19 @@ class MongoTools():
 
         if self.is_duplicates():
             self.remove_duplicates(id_list=self.get_ids(buffer=self.buffer))
-            raise Exception("Duplicates in List")
 
-        col.update_many(filter={}, update={"$unset": self.buffer}, upsert=True)
+        col.update_many(filter={}, update={"$set": self.buffer}, upsert=True)
+        self.clear_buffer()
 
     def __add__(self, other):
         assert other is list or MongoTools
         if len(self.buffer) + len(other) > self.BUFFER_SIZE:
-            raise OverflowError
-        else:
-            self.buffer = [*self.buffer, *other]
-            self.remove_duplicates()
+            self.push_to_collection("scheduled_users")
+        self.buffer = [*self.buffer, *other]
+        self.remove_duplicates()
 
     def __len__(self) -> int:
         return len(self.buffer)
 
-    def __iter__(self) -> List[dict]:
+    def __iter__(self) -> list:
         return self.buffer

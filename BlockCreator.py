@@ -1,12 +1,11 @@
 from datetime import datetime
-from typing import List, Dict, Tuple
 
 
 class BlockBuilder:
     """A simple python script for creating slack blocks easily and quickly"""
     time = datetime.now()  # Gets the current time
 
-    def __init__(self, block: list = List[dict]):
+    def __init__(self, block: list = []):
         # self.block = None
         self.block = block
 
@@ -77,7 +76,7 @@ class BlockBuilder:
 
         return BlockBuilder(block=self.block)
 
-    def img(self, title: str = "image", img_data: Tuple[str, str] = ("url", "alt text")):
+    def img(self, title: str = "image", img_data: tuple = ("url", "alt text")):
         """
         Creates an image
 
@@ -104,7 +103,7 @@ class BlockBuilder:
 
     def img_section(self,
                     text: str = "text",
-                    img_data: Tuple[str, str] = ("url", "alt text")):
+                    img_data: tuple = ("url", "alt text")):
         assert len(img_data) == 2
 
         self.block.append({
