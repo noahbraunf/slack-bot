@@ -9,8 +9,11 @@ from flask import Flask, request
 from slackeventsapi import SlackEventAdapter
 
 from BlockCreator import BlockBuilder
+from apscheduler.schedulers.background import BackgroundScheduler
+import atexit
 
 app = Flask(__name__)
+
 
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
@@ -19,6 +22,9 @@ slack_event_adapter = SlackEventAdapter(  # ! Create environment variables for y
     os.getenv('SLACK_SECRET'), "/slack/events", app)
 client = slack.WebClient(  # ! Create environment variables for your bot token secret
     os.getenv('SLACK_BOT_SECRET'))
+scheduler = BackgroundScheduler()
+
+atexit.register(lambda: scheduler.shutdown())
 
 
 @slack_event_adapter.on(event="message")
@@ -66,19 +72,23 @@ def handle_interaction():
 
     if actions[0].get('type') == 'button':
         value = actions[0].get('value')
-        if value == 'no' or 'yes':
-            if value == 'yes':
-                client.api_call("chat.postEphemeral", json={"attachments": [
-                                {"pretext": ":tada: *Scheduling...* :tada:"}], "user": user,
-                    "channel": channel})
-            elif value == 'no':
-                client.api_call("chat.postEphemeral", json={"attachments": [
-                                {"pretext": ":tada: *Deleting message...* :tada:", "text": "No longer scheduling"}], "user": user,
-                    "channel": channel})
-            client.api_call("chat.delete", json={
-                "channel": channel, "ts": m_ts})
+        handle_button_click(value, user, channel, m_ts)
 
     return 'action successful'
+
+
+def handle_button_click(value, user, channel, ts):
+    if value == 'no' or 'yes':
+        if value == 'yes':
+            client.api_call("chat.postEphemeral", json={"attachments": [
+                            {"text": ":tada: *Scheduling...* :tada:\nPlease allow up to 30 minutes for the dates to be updated/scheduled"}], "user": user,
+                "channel": channel})
+        elif value == 'no':
+            client.api_call("chat.postEphemeral", json={"attachments": [
+                            {"pretext": ":tada: *Deleting message...* :tada:", "text": "No longer scheduling"}], "user": user,
+                "channel": channel})
+        client.api_call("chat.delete", json={
+            "channel": channel, "ts": ts})
 
 
 if __name__ == "__main__":
