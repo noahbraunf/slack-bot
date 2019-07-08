@@ -1,10 +1,9 @@
-#!./env/bin/python3
 import json
 import os
 from os.path import join, dirname
 from dotenv import load_dotenv
 from urllib.request import unquote
-
+from pprint import pprint
 import slack
 from flask import Flask, request
 from slackeventsapi import SlackEventAdapter
@@ -30,14 +29,18 @@ def handle_message(event_data):
     message = event_data["event"]  # gets event payload
 
     if message.get("user"):  # Makes sure that message is not sent by a bot
-        if message.get("text") == "available":  # Command
+        if message.get("text") == "on call":  # Command
             user = message["user"]  # Gets user id of user
             # Gets channel that message was sent in
-            channel = message["channel"]
-            message = f"Hello <@{user}>! select the days you will be available through below\n"
+            channel = message.get("channel")
+            text = f"Hello <@{user}>! select the days you will be available through below"
 
             block = BlockBuilder().section(
-                text=message).to_block()  # TODO: Design message
+                text=text).divider().datepicker(
+                    text="Start Date").datepicker(
+                        text="End Date").many_buttons(
+                            name_value=(
+                                ("Submit", "yes"), ("Cancel", "no"))).to_block()  # Block
 
             client.api_call(api_method="chat.postMessage",
                             json={
@@ -52,12 +55,28 @@ def handle_interaction():
     raw_data = request.get_data()  # Gets the data
 
     if raw_data is not None:
-        # converts url-ified JSON into readable json # ! UNUSED
+        # converts url-ified JSON payload into readable json
         req = json.loads(unquote(raw_data.decode()).replace("payload=", ""))
+        user = req.get('user').get('id')
+        channel = req.get('channel').get('id')
+        m_ts = req.get('message').get('ts')
+        actions = req.get('actions')
     else:
-        return 'action unsuccessful: No Data Recieved'
+        return 'action unsuccessful: No Data Recieved'  # Slack Problem
 
-    # TODO: Add interactivity
+    if actions[0].get('type') == 'button':
+        value = actions[0].get('value')
+        if value == 'no' or 'yes':
+            if value == 'yes':
+                client.api_call("chat.postEphemeral", json={"attachments": [
+                                {"pretext": ":tada: *Scheduling...* :tada:"}], "user": user,
+                    "channel": channel})
+            elif value == 'no':
+                client.api_call("chat.postEphemeral", json={"attachments": [
+                                {"pretext": ":tada: *Deleting message...* :tada:", "text": "No longer scheduling"}], "user": user,
+                    "channel": channel})
+            client.api_call("chat.delete", json={
+                "channel": channel, "ts": m_ts})
 
     return 'action successful'
 
