@@ -15,20 +15,34 @@ def parse_date(date: str) -> tuple:
     :param date: A date-string in the format 'YYYY-MM-DD'
     :rtype: tuple
     """
-    regex = r"(\d{4})?\-(0[0-9]|1[0-2])?\-(0[0-9]|1[0-9]|2[0-9]|3[0-1])?"
+    split_date = date.split('-')
+    regex_arr = [
+        r"(\d{4}?)", r"(0[0-9]|1[0-2])", r"(0[0-9]|1[0-9]|2[0-9]|3[0-1])"
+    ]
 
-    regex = re.compile(regex)
-    is_date = regex.match(date)
+    for i, (date_section,
+            regex_section) in enumerate(zip(split_date, regex_arr)):
+        compiled_regex = re.compile(regex_section)
+        is_date = compiled_regex.match(date_section)
+        if not is_date:
+            if len(split_date[0]) != 4:
+                raise SyntaxError(
+                    f"Invalid Syntax: The date inputed ({date}) should be in YYYY-MM-DD format"
+                )
 
-    if is_date:
-        int_dates = int(date.replace("-", ""))
-        date_array = date.split("-")
-    else:
-        raise SyntaxError(
-            f"Invalid Syntax: The date inputed ({date}) should be in YYYY-MM-DD format"
-        )
+            date_section = date_section.zfill(2)
+            split_date[i] = date_section
+
+            is_date = compiled_regex.match(date_section)
+            if not is_date:
+                raise SyntaxError(
+                    f"Invalid Syntax: The date inputed ({date}) should be in YYYY-MM-DD format"
+                )
+
+    int_dates = int(''.join(split_date))
+
     # pprint(int_dates)
-    return (int_dates, date_array)
+    return (int_dates, split_date)
 
 
 def update_or_reset_user(user_id: str,
@@ -51,7 +65,7 @@ def update_or_reset_user(user_id: str,
     users.update_one({'_id': user_id}, {'$set': user}, upsert=True)
 
 
-# DEBUG CODE. # ! REMOVE LATER
+# DEBUG CODE. # * REMOVE LATER
 # for document in users.find():
 #     pprint(document)
 # test_dates = ("2019-10-12", "2012-04-33", "2019-22-3", "2019-11-09", "2222-12-31")
