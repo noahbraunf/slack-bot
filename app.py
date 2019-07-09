@@ -14,7 +14,7 @@ from flask import Flask, request
 from slackeventsapi import SlackEventAdapter
 
 from BlockCreator import BlockBuilder
-from Database import MongoTools, parse_date, update_or_reset_user
+from Database import MongoTools, parse_date  # , update_or_reset_user
 
 app = Flask(__name__)
 
@@ -126,7 +126,7 @@ def handle_interaction():
 def handle_button_click(value, user, channel, ts, name):
     if value == 'no' or 'yes':
         if value == 'yes':
-            update_or_reset_user(user_id=user, name=name)
+            # update_or_reset_user(user_id=user, name=name)
             client.api_call(
                 "chat.postEphemeral",
                 json={
@@ -167,7 +167,7 @@ def handle_date_selection(start_date, end_date) -> tuple:
 
 
 def reset_log():
-    f = open('debug.log', 'w')
+    f = open('debug.log', 'w+')
     f.close()
 
 

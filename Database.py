@@ -104,7 +104,8 @@ class MongoTools():
                  database: str = "users",
                  buffer_size: int = 3,
                  host="localhost",
-                 port=27017):
+                 port=27017,
+                 **kwargs):
         self.buffer = []
         self.database = MongoClient(host, port)[database]
         self.BUFFER_SIZE = buffer_size
@@ -113,11 +114,19 @@ class MongoTools():
         self.buffer.clear()
 
     def append(self, other):
-        for documents in other:
-            assert documents is dict
+        """
+        Append more elements into the mongo buffer
+
+        :param other: either a list of dicts or another MongoBuffer
+        """
+        # for documents in other: # * Need to know how to use __iter__
+        #    assert documents is dict
+        assert other is list or other is MongoTools
         if len(self.buffer) + len(other) > self.BUFFER_SIZE:
             self.push_to_collection("scheduled_users")
-        self.buffer = [*self.buffer, *other]
+
+        self.buffer = [*self.buffer, *other
+                       ] if other is list else [*self.buffer, *other.buffer]
         self.remove_duplicates()
 
     def remove_duplicates(self, id_list=None):
@@ -125,10 +134,10 @@ class MongoTools():
             id_list = self.get_ids()
         nd_set = set(self.buffer)
         if len(id_list) == len(nd_set):
-            raise TypeError("no duplicates to remove!")
+            print("no duplicates to remove!")
         else:
             dif = sorted(id_list) - nd_set
-            # print(dif)  # ! DEBUG
+            # print(dif)  # * DEBUG
 
             assert len(self.buffer) >= dif
             u_buffer = []
@@ -165,14 +174,12 @@ class MongoTools():
         self.clear_buffer()
 
     def __add__(self, other):
-        assert other is list or MongoTools
+        assert other is list or other is MongoTools
         if len(self.buffer) + len(other) > self.BUFFER_SIZE:
             self.push_to_collection("scheduled_users")
-        self.buffer = [*self.buffer, *other]
+        self.buffer = [*self.buffer, *other
+                       ] if other is list else [*self.buffer, *other.buffer]
         self.remove_duplicates()
 
     def __len__(self) -> int:
         return len(self.buffer)
-
-    def __iter__(self) -> list:
-        return self.buffer

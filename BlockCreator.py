@@ -245,7 +245,7 @@ class BlockBuilder:
         return BlockBuilder(block=self.block)
 
     def list_of_users(self, *args):
-        pass
+        pass  # return BlockBuilder()
 
     def to_block(self):
         return self.block
