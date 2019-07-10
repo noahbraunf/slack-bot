@@ -14,7 +14,7 @@ from flask import Flask, request
 from slackeventsapi import SlackEventAdapter
 
 from BlockCreator import BlockBuilder
-from Database import MongoTools, parse_date  # , update_or_reset_user
+from Database import MongoTools, parse_date  # , update_or_reset_user # Unkown if needed
 
 app = Flask(__name__)
 
@@ -110,12 +110,12 @@ def handle_interaction():
                 continue
         start_date, end_date = handle_date_selection(datepickers[0],
                                                      datepickers[1])
-        db.append({
+        db.append([{
             "user_id": user.get('id'),
             "name": user.get('name'),
             "start_date": start_date,
             "end_date": end_date
-        })
+        }])
         logging.debug(pformat(db))
         handle_button_click(value, user.get('id'), channel, m_ts,
                             user.get('name'))
