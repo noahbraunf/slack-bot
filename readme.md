@@ -25,7 +25,8 @@
 
 ## 📝 Table of Contents
 
-- [About](#about)
+<!-- - [About](#about) -->
+
 - [Demo / Working](#demo)
 - [How it works](#working)
 - [Usage](#usage)
@@ -38,8 +39,6 @@
 - [Acknowledgments](#acknowledgement)
 
 ## 🧐 About <a name = "about"></a>
-
-Write about 1-2 paragraphs describing the purpose of your bot.
 
 ## 🎥 Demo / Working <a name = "demo"></a>
 
