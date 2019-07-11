@@ -132,8 +132,9 @@ class MongoTools():
         id_set = set(id_list)
         if len(id_list) == len(id_set):
             print("no duplicates to remove!")
-        else:
-            dif = sorted(id_list) - id_set
+        elif len(id_list) > len(id_set):
+            dif = [s if s not in id_list else None for s in id_set]
+            dif = list(filter(lambda x: x is not None, dif))
             # print(dif)  # * DEBUG
 
             assert len(self.buffer) >= len(dif)
@@ -143,7 +144,8 @@ class MongoTools():
                     u_buffer.append(self.buffer[i])
 
             self.buffer = u_buffer
-
+        else:
+            print('something went wrong...')
         # self.buffer = [
         #    dict(t) for t in {tuple(d.items())
         #                      for d in self.buffer}
@@ -168,7 +170,7 @@ class MongoTools():
 
     def push_to_collection(self, collection: str):
         """
-
+        Push to specified collection in MongoDB
 
         :param collection: The MongoDB Collection
         """
@@ -178,9 +180,9 @@ class MongoTools():
             self.remove_duplicates(id_list=self.get_ids(buffer=self.buffer))
 
         for doc in self.buffer:
-            col.update(filter={doc['user_id']},
-                       update={"$set": doc},
-                       upsert=True)
+            col.update_one(filter={doc['user_id']},
+                           update={"$set": doc},
+                           upsert=True)
         self.clear_buffer()
 
     def __add__(self, other):

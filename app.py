@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 from flask import Flask, request
 from slackeventsapi import SlackEventAdapter
 
-from BlockCreator import BlockBuilder
+from BlockCreator import BlockBuilder, date_to_words
 from Database import MongoTools, parse_date  # , update_or_reset_user # Unkown if needed
 
 app = Flask(__name__)
@@ -21,7 +21,7 @@ app = Flask(__name__)
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
-slack_event_adapter = SlackEventAdapter(  # * Create environment variables for your slack signing secret
+slack_event_adapter = SlackEventAdapter(  # * Create environment (.env) variables for your slack signing secret
     os.getenv('SLACK_SECRET'), "/slack/events", app)
 client = slack.WebClient(  # * Create environment variables for your bot token secret
     os.getenv('SLACK_BOT_SECRET'))
@@ -37,16 +37,22 @@ atexit.register(lambda: scheduler.shutdown())
 
 @slack_event_adapter.on(event="message")
 def handle_message(event_data):
-    """Does stuff with slack messages"""
+    """
+    Does stuff with slack messages
+    
+    :param event_data: the payload sent from slack
+    """
     logging.debug(pformat(event_data))  # * DEBUG
 
     message = event_data["event"]  # gets event payload
 
     if message.get("user"):  # Makes sure that message is not sent by a bot
+        user = message.get("user")  # Gets user id of user
+
+        channel = message.get(
+            "channel")  # Gets channel that message was sent in
         if message.get("text") == "on call":  # Command
-            user = message["user"]  # Gets user id of user
-            # Gets channel that message was sent in
-            channel = message.get("channel")
+
             text = f"Hello <@{user}>! select the days you will be available through below"
 
             block = BlockBuilder([]).section(text=text).divider().datepicker(
@@ -61,10 +67,42 @@ def handle_message(event_data):
                             })
             block = None
         if message.get("text") == "view on call":
-            pass
+            #
+            #
+            #}) # TODO: put this in a loop
+
+            block = BlockBuilder(
+                []).section(text='*Dates People are on Call*').divider()
+
+            collection = db.database['scheduled_users']
+
+            user_images = {}
+            for users in collection:
+                start_date, end_date = users['start_date'], users['end_date']
+                user_data = client.api_call(
+                    'users.profile.get', json={"user": collection['user_id']})
+                user_images[users['user_id']] = user_data['image_72']
+                block.section(
+                    text=
+                    f'from *{date_to_words(start_date[0], start_date[1], start_date[2])}* to *{date_to_words(end_date[0], end_date[1], end_date[2])}*'
+                )
+                block.context(data=((
+                    'img', user_images[users['user_id']],
+                    '_error displaying image_'
+                ), ('text',
+                    f'<!{users["user_id"]}>. _Contact them if you have any converns_'
+                    )))
+            logging.debug(pformat(user_images))
+            client.api_call(api_method="chat.postMessage",
+                            json={
+                                "channel": channel,
+                                "blocks": block.to_block()
+                            })
+
+            block = None
         if message.get("text") == "reset on call":
             pass
-        if message.get("text") == "help":
+        if message.get("text") == "help me schedule":
             pass
 
 
@@ -119,6 +157,12 @@ def handle_interaction():
         logging.debug(pformat(db))
         handle_button_click(value, user.get('id'), channel, m_ts,
                             user.get('name'))
+        client.api_call(
+            "chat.delete",
+            json={  #
+                "channel": channel,
+                "ts": m_ts
+            })
 
     return 'action successful'
 
@@ -155,20 +199,18 @@ def handle_button_click(value, user, channel, ts, name):
                                 "channel":
                                 channel
                             })
-        # client.api_call("chat.delete", json={ # * Disabled for debug reasons.
-        #     "channel": channel, "ts": ts})
 
 
 def handle_date_selection(start_date, end_date) -> tuple:
-    start = parse_date(start_date)[1]
-    end = parse_date(end_date)[1]
+    start = parse_date(start_date)
+    end = parse_date(end_date)
 
     return (start, end)
 
 
 def reset_log():
-    f = open('debug.log', 'w+')
-    f.close()
+    with open('debug.log', 'w+') as f:
+        f.close()
 
 
 if __name__ == "__main__":
