@@ -13,7 +13,7 @@ from colorama import Fore, Style
 from dotenv import load_dotenv
 from flask import Flask, request
 from slackeventsapi import SlackEventAdapter
-
+from collections import defaultdict
 from BlockCreator import BlockBuilder, date_to_words
 from Database import MongoTools, parse_date  # , update_or_reset_user # ? Unkown if needed
 
@@ -35,6 +35,8 @@ logging.basicConfig(filename='debug.log',
                     datefmt='%H:%M:%S',
                     level=logging.DEBUG)
 atexit.register(lambda: scheduler.shutdown())
+
+datepickers = {}
 
 
 @slack_event_adapter.on(event="message")
@@ -78,21 +80,21 @@ def handle_message(event_data):
             for users in collection.find():
                 start_date = users['start_date']
                 end_date = users['end_date']
-
-                user_data = user_client.users_profile_get(
-                    user=users["user_id"])
-                user_images[
-                    users['user_id']] = user_data['profile']['image_72']
-                block.context(data=((
-                    'img', user_images[users['user_id']],
-                    '_error displaying image_'
-                ), ('text',
-                    f'<@{users["user_id"]}>. _Contact them if you have any concerns_'
-                    )))
-                block.section(
-                    text=
-                    f'from the *{date_to_words(start_date[0], start_date[1], start_date[2])[0]}* to the *{date_to_words(end_date[0], end_date[1], end_date[2])[0]}*'
-                )
+                if len(start_date) >= 3 and len(end_date) >= 3:
+                    user_data = user_client.users_profile_get(
+                        user=users["user_id"])
+                    user_images[
+                        users['user_id']] = user_data['profile']['image_72']
+                    block.context(data=((
+                        'img', user_images[users['user_id']],
+                        '_error displaying image_'
+                    ), ('text',
+                        f'<@{users["user_id"]}>. _Contact them if you have any concerns_'
+                        )))
+                    block.section(
+                        text=
+                        f'from the *{date_to_words(start_date[0], start_date[1], start_date[2])[0]}* to the *{date_to_words(end_date[0], end_date[1], end_date[2])[0]}*'
+                    ).divider()
 
             block = block.to_block()
             logging.debug(pformat(user_images))
@@ -113,8 +115,7 @@ def handle_message(event_data):
 @app.route("/slack/interactive", methods=['GET', 'POST'])
 def handle_interaction():
     """Sends payload whenever interactive element (button, etc.) is pressed"""
-    raw_data = request.get_data(
-    )  # Gets the data fuck that when ABCDEFGHIJKLNMOP
+    raw_data = request.get_data()  # Gets the data
 
     if raw_data is not None:
         # converts url-ified JSON payload into readable json
@@ -136,62 +137,96 @@ def handle_interaction():
         logging.debug("Slack sent no data back!")
         return 'action unsuccessful: No Data Recieved'  # Slack Problem
     logging.debug(pformat(req))
-    datepickers = {'start_date': '', 'end_date': ''}
+    global datepickers
+
     if actions[0].get('type') == 'button':
         handle_button_click(value=actions[0].get('value'),
-                            user=user,
+                            user=user['id'],
                             channel=channel,
                             ts=m_ts)
         if actions[0].get('value') == "no0" or actions[0].get(
                 'value') == "no1" or actions[0].get('value') == "yes1":
             if actions[0].get('value') == "yes1":
-                db.append([{
+                logging.debug(pformat(datepickers))
+                if datepickers.get(user['id']):
+                    if datepickers.get(user['id']).get('start_date'):
+                        start_date = datepickers.get(
+                            user['id']).get('start_date')
+                    else:
+                        start_date = message['blocks'][2]['accessory'][
+                            'initial_date']
+                    if datepickers.get(user['id']).get('end_date'):
+                        end_date = datepickers.get(user['id']).get('end_date')
+                    else:
+                        end_date = message['blocks'][2]['accessory'][
+                            'initial_date']
+                else:
+                    start_date = message['blocks'][2]['accessory'][
+                        'initial_date']
+                    end_date = message['blocks'][2]['accessory'][
+                        'initial_date']
+                db.append(other=[{
                     'user_id': user['id'],
                     'name': user['username'],
-                    'start_date': datepickers['start_date'],
-                    'end_date': datepickers['end_date']
+                    'start_date': parse_date(start_date)[1],
+                    'end_date': parse_date(end_date)[1]
                 }])
             client.api_call("chat.delete",
                             json={
                                 "channel": channel,
                                 "ts": m_ts
                             })
-            datepickers = {'start_date': '', 'end_date': ''}
+            datepickers.pop(user['id'])
+
     if actions[0].get('type') == 'datepicker':
         if message.get('blocks')[-1].get('elements')[0].get('value') == 'yes0':
             try:
-                datepickers['start_date'] = actions[0]['selected_date']
+                datepickers[user['id']] = {
+                    'start_date': actions[0].get('selected_date')
+                }
             except Exception as e:
                 logging.exception(e)
-                datepickers['start_date'] = actions[0].get('initial_date')
+                datepickers[user['id']] = {
+                    'start_date': actions[0].get('initial_date')
+                }
+            logging.debug(pformat(datepickers))
         if message.get('blocks')[-1].get('elements')[0].get('value') == 'yes1':
             try:
-                datepickers['end_date'] = actions[0]['selected_date']
+                try:
+                    datepickers[user['id']] = {
+                        'start_date': datepickers[user['id']].get('start_date')
+                    }
+                except:
+                    datepickers[user['id']] = {
+                        'start_date': actions[0].get('initial_date')
+                    }
+                datepickers[user['id']]['end_date'] = actions[0].get(
+                    'selected_date')
             except Exception as e:
                 logging.exception(e)
-                datepickers['end_date'] = actions[0].get('initial_date')
+                try:
+                    datepickers[user['id']] = {
+                        'start_date': datepickers[user['id']].get('start_date')
+                    }
+                except Exception as e:
+                    logging.exception(e)
+                    datepickers[user['id']] = {
+                        'start_date': actions[0].get('initial_date')
+                    }
+                datepickers[user['id']]['end_date'] = {
+                    actions[0].get('initial_date')
+                }
+            logging.debug(pformat(datepickers))
 
-        # * Deprecated
-        # datepickers = {
-        #     'start_date': '',
-        #     'end_date': ''
-        # }  # ? Unsure if this is even needed anymore
-        # for data in actions[0]:
-        #     if len(datepickers) >= 2:
-        #         break
-        #     try:
-        #         if data.get('selected_date'):
-        #             datepickers.append(
-        #                 data.get('accessory').get('initial_date'))
-        #         elif data.get('initial_date'):
-        #             pass
-        #     except:
-        #         continue
     return 'action successful'
 
 
-def handle_button_click(value, user, channel,
-                        ts):  # TODO: Fix this horrible code
+def handle_button_click(
+        value,
+        user,
+        channel,
+        ts,
+):  # TODO: Fix this horrible code
     # if value == 'no0' or value == 'yes0': # * Not needed
     if value == 'yes0':
         block = BlockBuilder([]).section(
@@ -202,9 +237,10 @@ def handle_button_click(value, user, channel,
 
         client.api_call("chat.update",
                         json={
+                            "text": ':)',
                             "channel": channel,
                             "ts": ts,
-                            "block": block
+                            "blocks": block
                         })
         block = None
 
