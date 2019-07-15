@@ -101,7 +101,7 @@ class MongoTools():
                  port=27017,
                  **kwargs):
         self.buffer = []
-        self.mc = MongoClient(host, port)
+        self.mc = MongoClient(f'mongodb://{host}:{port}/')
         self.database = self.mc[database]
         self.BUFFER_SIZE = buffer_size
 
@@ -146,19 +146,15 @@ class MongoTools():
             self.buffer = u_buffer
         else:
             print('something went wrong...')
-        # self.buffer = [
-        #    dict(t) for t in {tuple(d.items())
-        #                      for d in self.buffer}
-        # ]
 
     def is_duplicates(self, remove_dupes=False) -> bool:
-        assert len(self.buffer) > 0
-        ids = self.get_ids(self.buffer)
-        if ids != set(ids):
-            if remove_dupes:
-                self.remove_duplicates(ids)
-            return True
-        return False
+        if len(self.buffer) >= 0:
+            ids = self.get_ids(self.buffer)
+            if ids != set(ids):
+                if remove_dupes:
+                    self.remove_duplicates(ids)
+                return True
+            return False
 
     def get_ids(self, buffer: list = None) -> list:
         if buffer is None:
@@ -180,7 +176,7 @@ class MongoTools():
             self.remove_duplicates(id_list=self.get_ids(buffer=self.buffer))
 
         for doc in self.buffer:
-            col.update_one(filter={doc['user_id']},
+            col.update_one(filter={'user_id': doc['user_id']},
                            update={"$set": doc},
                            upsert=True)
         self.clear_buffer()

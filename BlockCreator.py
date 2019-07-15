@@ -2,32 +2,39 @@ from datetime import datetime
 from pymongo import MongoClient
 
 
-def date_to_words(year: str, month: str, day: str) -> list:
+def date_to_words(year: str, month: str, day: str) -> tuple:
+    """
+    Converts day to word
+
+
+    :param year, month, day: year, month, and day
+    :rtype: tuple
+    """
     month_dict = {
-        "1": "January",
-        "2": "February",
-        "3": "March",
-        "4": "April",
-        "5": "May",
-        "6": "June",
-        "7": "July",
-        "8": "August",
-        "9": "September",
+        "01": "January",
+        "02": "February",
+        "03": "March",
+        "04": "April",
+        "05": "May",
+        "06": "June",
+        "07": "July",
+        "08": "August",
+        "09": "September",
         "10": "October",
         "11": "November",
         "12": "December"
     }
 
     day_dict = {
-        "1": "first",
-        "2": "second",
-        "3": "third",
-        "4": "fourth",
-        "5": "fifth",
-        "6": "sixth",
-        "7": "seventh",
-        "8": "eighth",
-        "9": "ninth",
+        "01": "first",
+        "02": "second",
+        "03": "third",
+        "04": "fourth",
+        "05": "fifth",
+        "06": "sixth",
+        "07": "seventh",
+        "08": "eighth",
+        "09": "ninth",
         "10": "tenth",
         "11": "eleventh",
         "12": "twelth",
@@ -51,7 +58,7 @@ def date_to_words(year: str, month: str, day: str) -> list:
         "30": "thirtieth",
         "31": "thirty-first"
     }
-    return [day_dict[day], month_dict[month], year]
+    return f"{day_dict[day]} of {month_dict[month]}, {year}", [day_dict[day], month_dict[month], year]
 
 
 class BlockBuilder:
@@ -277,7 +284,6 @@ class BlockBuilder:
             return {
                 "type": text_type,
                 "text": text,
-                "emoji": emoji,
                 "verbatim": verbatim
             }
 
