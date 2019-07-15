@@ -136,107 +136,122 @@ def handle_interaction():
         logging.debug("Slack sent no data back!")
         return 'action unsuccessful: No Data Recieved'  # Slack Problem
     logging.debug(pformat(req))
-
+    datepickers = {'start_date': '', 'end_date': ''}
     if actions[0].get('type') == 'button':
-        if actions[0].get('value') == "yes0" or actions[0].get(
-                'value') == "no0":
-            value = actions[0].get('value')
-
-            start_date, end_date = handle_date_selection(
-                datepickers[0], datepickers[1])
-            db.append([{
-                "user_id": user.get('id'),
-                "name": user.get('name'),
-                "start_date": start_date,
-                "end_date": end_date
-            }])
-            logging.debug(pformat(db))
-            handle_button_click(value, user.get('id'), channel, m_ts,
-                                user.get('name'))
-            client.api_call(
-                "chat.delete",
-                json={  #
-                    "channel": channel,
-                    "ts": m_ts
-                })
+        handle_button_click(value=actions[0].get('value'),
+                            user=user,
+                            channel=channel,
+                            ts=m_ts)
+        if actions[0].get('value') == "no0" or actions[0].get(
+                'value') == "no1" or actions[0].get('value') == "yes1":
+            if actions[0].get('value') == "yes1":
+                db.append([{
+                    'user_id': user['id'],
+                    'name': user['username'],
+                    'start_date': datepickers['start_date'],
+                    'end_date': datepickers['end_date']
+                }])
+            client.api_call("chat.delete",
+                            json={
+                                "channel": channel,
+                                "ts": m_ts
+                            })
+            datepickers = {'start_date': '', 'end_date': ''}
     if actions[0].get('type') == 'datepicker':
-        datepickers = {
-            'start_date': '',
-            'end_date': ''
-        }  # ? Unsure if this is even needed anymore
-        for data in actions[0]:
-            if len(datepickers) >= 2:
-                break
+        if message.get('blocks')[-1].get('elements')[0].get('value') == 'yes0':
             try:
-                if data.get('selected_date'):
-                    datepickers.append(
-                        data.get('accessory').get('initial_date'))
-                elif data.get('initial_date'):
-                    pass
-            except:
-                continue
+                datepickers['start_date'] = actions[0]['selected_date']
+            except Exception as e:
+                logging.exception(e)
+                datepickers['start_date'] = actions[0].get('initial_date')
+        if message.get('blocks')[-1].get('elements')[0].get('value') == 'yes1':
+            try:
+                datepickers['end_date'] = actions[0]['selected_date']
+            except Exception as e:
+                logging.exception(e)
+                datepickers['end_date'] = actions[0].get('initial_date')
+
+        # * Deprecated
+        # datepickers = {
+        #     'start_date': '',
+        #     'end_date': ''
+        # }  # ? Unsure if this is even needed anymore
+        # for data in actions[0]:
+        #     if len(datepickers) >= 2:
+        #         break
+        #     try:
+        #         if data.get('selected_date'):
+        #             datepickers.append(
+        #                 data.get('accessory').get('initial_date'))
+        #         elif data.get('initial_date'):
+        #             pass
+        #     except:
+        #         continue
     return 'action successful'
 
 
-def handle_button_click(value, user, channel, ts,
-                        name):  # TODO: Fix this horrible code
-    if value == 'no0' or value == 'yes0':
-        if value == 'yes0':
-            block = BlockBuilder([]).section(
-                text=f'Now select the end date, <@{user}>.'
-            ).divider().datepicker(text="End Date").many_buttons(
-                name_value=(("Submit", "yes1"), ("Cancel", "no1"))).to_block()
-            # update_or_reset_user(user_id=user, name=name) # * DEPRECATED
-            client.api_call("chat.update",
-                            json={
-                                "user": user,
-                                "channel": channel,
-                                "block": block
-                            })
-            block = None
+def handle_button_click(value, user, channel,
+                        ts):  # TODO: Fix this horrible code
+    # if value == 'no0' or value == 'yes0': # * Not needed
+    if value == 'yes0':
+        block = BlockBuilder([]).section(
+            text=f'Now select the end date, <@{user}>.').divider().datepicker(
+                text="End Date").many_buttons(name_value=(("Submit", "yes1"),
+                                                          ("Cancel",
+                                                           "no1"))).to_block()
 
-        elif value == 'no0':
-            client.api_call("chat.postEphemeral",
-                            json={
-                                "attachments": [{
-                                    "pretext":
-                                    ":tada: *Deleting message...* :tada:",
-                                    "text": "No longer scheduling"
-                                }],
-                                "user":
-                                user,
-                                "channel":
-                                channel
-                            })
-    if value == 'no1' or value == 'yes1':
-        if value == 'yes1':
-            client.api_call(
-                "chat.postEphemeral",
-                json={
-                    'attachments': [{
-                        'pretext':
-                        ':tada: *Scheduling message...* :tada:',
-                        'text':
-                        'Please allow up to 15 minutes for your scheduled call to be created'
-                    }],
-                    'user':
-                    user,
-                    'channel':
-                    channel
-                })
-        if value == 'no1':
-            client.api_call("chat.postEphemeral",
-                            json={
-                                "attachments": [{
-                                    "pretext":
-                                    ":tada: *Deleting message...* :tada:",
-                                    "text": "No longer scheduling"
-                                }],
-                                "user":
-                                user,
-                                "channel":
-                                channel
-                            })
+        client.api_call("chat.update",
+                        json={
+                            "channel": channel,
+                            "ts": ts,
+                            "block": block
+                        })
+        block = None
+
+    elif value == 'no0':
+        client.api_call("chat.postEphemeral",
+                        json={
+                            "attachments": [{
+                                "pretext":
+                                ":tada: *Deleting message...* :tada:",
+                                "text": "No longer scheduling"
+                            }],
+                            "user":
+                            user,
+                            "channel":
+                            channel
+                        })
+
+
+# if value == 'no1' or value == 'yes1': # * Not needed
+    elif value == 'yes1':
+        client.api_call(
+            "chat.postEphemeral",
+            json={
+                'attachments': [{
+                    'pretext':
+                    ':tada: *Scheduling message...* :tada:',
+                    'text':
+                    'Please allow up to 15 minutes for your scheduled call to be created'
+                }],
+                'user':
+                user,
+                'channel':
+                channel
+            })
+    elif value == 'no1':
+        client.api_call("chat.postEphemeral",
+                        json={
+                            "attachments": [{
+                                "pretext":
+                                ":tada: *Deleting message...* :tada:",
+                                "text": "No longer scheduling"
+                            }],
+                            "user":
+                            user,
+                            "channel":
+                            channel
+                        })
 
 
 def handle_date_selection(start_date, end_date) -> tuple:
