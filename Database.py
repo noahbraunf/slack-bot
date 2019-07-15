@@ -115,7 +115,7 @@ class MongoTools():
         :param other: either a list of dicts or another MongoBuffer
         """
         # for documents in other: # * Need to figure out how to use __iter__
-        #    assert documents is dict
+        #    assert documents is dict # ? Deprecated
         assert type(other) is list or type(other) is MongoTools  # Fixed
         if len(self.buffer) + len(other) > self.BUFFER_SIZE:
             self.push_to_collection("scheduled_users")
@@ -125,8 +125,16 @@ class MongoTools():
         ]
         self.remove_duplicates()
 
-    def remove_duplicates(self, id_list=None):
+    def remove_user(self, collection, user_id):
+        """
+        Removes user from specified collecition
+        """
+        self.database[collection].remove(filter='user_id')
 
+    def remove_duplicates(self, id_list=None):
+        """
+        Remove duplicates from the buffer
+        """
         if id_list is None:
             id_list = self.get_ids()
         id_set = set(id_list)
@@ -134,7 +142,7 @@ class MongoTools():
             print("no duplicates to remove!")
         elif len(id_list) > len(id_set):
             dif = [s if s not in id_list else None for s in id_set]
-            dif = list(filter(lambda x: x is not None, dif))
+            dif = list(filter(lambda x: x, dif))
             # print(dif)  # * DEBUG
 
             assert len(self.buffer) >= len(dif)
