@@ -107,9 +107,31 @@ def handle_message(event_data):
 
             block = None
         if message.get("text") == "reset on call":
-            pass  # TODO: allow user to reset their scheduled on-call dates
+            db.database['scheduled_users'].update_one(
+                filter={'user_id': user},
+                update={'$set': {
+                    'start_date': None,
+                    'end_date': None
+                }},
+                upsert=True)
+            client.chat_postEphemeral(
+                user=user,
+                channel=channel,
+                text=f'Sucessfully removed you from on call list')
         if message.get("text") == "help me schedule":
-            pass
+            block = BlockBuilder([]).section(
+                text='_Beep Boop_. I am a bot who schedules things!'
+            ).divider().section(
+                text=
+                '*Command*: `view on call`\n\nThis command displays who is on call on certain dates\n>Usage: type `view on call`'
+            ).section(
+                text=
+                '*Command*: `view on call`\n\nThis command allows you to pick the dates you are on call\n>Usage: type `on call` and follow the steps I display!'
+            ).to_block()
+
+            client.chat_postEphemeral(user=user, channel=channel, block=block)
+
+            block = None
 
 
 @app.route("/slack/interactive", methods=['GET', 'POST'])
