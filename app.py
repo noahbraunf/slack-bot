@@ -7,11 +7,11 @@ from os.path import dirname, join
 from pprint import pformat
 from urllib.parse import quote
 from urllib.request import unquote
+from datetime import datetime
 
 import requests
 import slack
 from apscheduler.schedulers.background import BackgroundScheduler
-
 from dotenv import load_dotenv
 from flask import Flask, request
 from slackeventsapi import SlackEventAdapter
@@ -80,11 +80,13 @@ def handle_message(event_data):
         if message.get(
                 "text"
         ) == "view on call":  # See who is on call on whichever dates
+            db.push_to_collection('scheduled_users')
+
             block = BlockBuilder(
                 []).section(text='*Dates People are on Call*').divider()
 
             collection = db.database['scheduled_users']
-
+            c_time = datetime.now()
             user_images = {}
             for users in collection.find():
                 start_date = users['start_date']
@@ -95,16 +97,22 @@ def handle_message(event_data):
                         user=users["user_id"])
                     user_images[
                         users['user_id']] = user_data['profile']['image_72']
-                    block.context(data=((
-                        'img', user_images[users['user_id']],
-                        '_error displaying user image_'
-                    ), ('text',
-                        f'<@{users["user_id"]}>. _Contact them if you have any concerns_'
-                        )))
-                    block.section(
-                        text=
-                        f'>from the *{date_to_words(start_date[0], start_date[1], start_date[2])[0]}* to the *{date_to_words(end_date[0], end_date[1], end_date[2])[0]}*'
-                    ).divider()
+                    if int(start_date[0]) <= c_time.year <= int(end_date[0]):
+                        if int(start_date[1]) <= c_time.month <= int(
+                                end_date[1]):
+                            if int(start_date[2]) <= c_time.day <= int(
+                                    end_date[2]):
+
+                                block.context(data=((
+                                    'img', user_images[users['user_id']],
+                                    '_error displaying user image_'
+                                ), ('text',
+                                    f'<@{users["user_id"]}>. _Contact them if you have any concerns_'
+                                    )))
+                                block.section(
+                                    text=
+                                    f'>from the *{date_to_words(start_date[0], start_date[1], start_date[2])[0]}* to the *{date_to_words(end_date[0], end_date[1], end_date[2])[0]}*'
+                                ).divider()
 
             block = block.to_block()
             logging.debug(pformat(user_images))
