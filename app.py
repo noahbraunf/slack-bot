@@ -11,7 +11,7 @@ from urllib.request import unquote
 import requests
 import slack
 from apscheduler.schedulers.background import BackgroundScheduler
-from colorama import Fore, Style
+
 from dotenv import load_dotenv
 from flask import Flask, request
 from slackeventsapi import SlackEventAdapter
@@ -134,10 +134,13 @@ def handle_message(event_data):
                 text='_Beep Boop_. I am a bot who schedules things!'
             ).divider().section(
                 text=
-                '*Command*: `view on call`\n\nThis command displays who is on call on certain dates\n>Usage: type `view on call`'
+                '*Command*: `view on call`\n\nThis command displays who is on call on certain dates.\n>Usage: type `view on call` to see who is on call.'
             ).section(
                 text=
-                '*Command*: `view on call`\n\nThis command allows you to pick the dates you are on call\n>Usage: type `on call` and follow the steps I display!'
+                '*Command*: `on call`\n\nThis command allows you to pick the dates you are on call.\n>Usage: type `on call` and follow the steps I display!'
+            ).section(
+                text=
+                '*Command*: `reset on call`\n\nThis command removes you from the on call list.\n>Usage: type `reset on call` to be removed from the list'
             ).to_block()
 
             client.chat_postEphemeral(user=user, channel=channel, blocks=block)
@@ -156,7 +159,8 @@ def handle_interaction():
             req = json.loads(
                 unquote(raw_data.decode()).replace("payload=", ""))
         except:
-            logging.debug("Something went wrong on slack's side")
+            logging.debug(
+                "Something went wrong on slack's side")  # Slack Problem
             raise
 
         logging.debug(pformat(req))
@@ -260,7 +264,8 @@ def handle_button_click(
         channel,
         ts,
 ):
-
+    """
+    """
     if value == 'yes0':
         block = BlockBuilder([]).section(
             text=f'Now select the end date, <@{user}>.').divider().datepicker(
@@ -270,7 +275,7 @@ def handle_button_click(
 
         client.api_call("chat.update",
                         json={
-                            "text": ':)',
+                            "text": '',
                             "channel": channel,
                             "ts": ts,
                             "blocks": block

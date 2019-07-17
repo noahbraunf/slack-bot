@@ -35,8 +35,6 @@ def parse_date(date: str) -> tuple:
                 )
 
     int_dates = int(''.join(split_date))
-
-    # pprint(int_dates)
     return (int_dates, split_date)
 
 
