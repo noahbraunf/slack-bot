@@ -32,7 +32,6 @@ user_client = slack.WebClient(
     token=os.getenv('SLACK_OAUTH_SECRET'))  # Used to get user data from slack
 scheduler = BackgroundScheduler()
 db = MongoTools(
-    buffer_size=1
 )  # Creates a mongotools instance for helping with user management
 logging.basicConfig(
     filename='debug.log',
