@@ -2,10 +2,12 @@ import atexit
 import json
 import logging
 import os
+from collections import defaultdict
 from os.path import dirname, join
 from pprint import pformat
-from urllib.request import unquote
 from urllib.parse import quote
+from urllib.request import unquote
+
 import requests
 import slack
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -13,9 +15,10 @@ from colorama import Fore, Style
 from dotenv import load_dotenv
 from flask import Flask, request
 from slackeventsapi import SlackEventAdapter
-from collections import defaultdict
+
 from BlockCreator import BlockBuilder, date_to_words
-from Database import MongoTools, parse_date  # , update_or_reset_user # ? Unkown if needed
+from Database import (  # , update_or_reset_user # ? Unkown if needed
+    MongoTools, parse_date)
 
 app = Flask(__name__)
 
@@ -80,20 +83,21 @@ def handle_message(event_data):
             for users in collection.find():
                 start_date = users['start_date']
                 end_date = users['end_date']
-                if len(start_date) >= 3 and len(end_date) >= 3:
+                if start_date and end_date and len(start_date) >= 3 and len(
+                        end_date) >= 3:
                     user_data = user_client.users_profile_get(
                         user=users["user_id"])
                     user_images[
                         users['user_id']] = user_data['profile']['image_72']
                     block.context(data=((
                         'img', user_images[users['user_id']],
-                        '_error displaying image_'
+                        '_error displaying user image_'
                     ), ('text',
                         f'<@{users["user_id"]}>. _Contact them if you have any concerns_'
                         )))
                     block.section(
                         text=
-                        f'from the *{date_to_words(start_date[0], start_date[1], start_date[2])[0]}* to the *{date_to_words(end_date[0], end_date[1], end_date[2])[0]}*'
+                        f'>from the *{date_to_words(start_date[0], start_date[1], start_date[2])[0]}* to the *{date_to_words(end_date[0], end_date[1], end_date[2])[0]}*'
                     ).divider()
 
             block = block.to_block()
@@ -129,7 +133,7 @@ def handle_message(event_data):
                 '*Command*: `view on call`\n\nThis command allows you to pick the dates you are on call\n>Usage: type `on call` and follow the steps I display!'
             ).to_block()
 
-            client.chat_postEphemeral(user=user, channel=channel, block=block)
+            client.chat_postEphemeral(user=user, channel=channel, blocks=block)
 
             block = None
 
@@ -320,7 +324,7 @@ def handle_date_selection(start_date, end_date) -> tuple:
 
 
 def reset_log():
-    with open('debug.log', 'w+') as f:  # ? Should I use with statement here?
+    with open('debug.log', 'w+') as f:  # ? Should I use 'with' statement here?
         f.close()
 
 

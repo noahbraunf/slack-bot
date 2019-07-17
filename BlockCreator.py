@@ -26,39 +26,41 @@ def date_to_words(year: str, month: str, day: str) -> tuple:
     }
 
     day_dict = {
-        "01": "first",
-        "02": "second",
-        "03": "third",
-        "04": "fourth",
-        "05": "fifth",
-        "06": "sixth",
-        "07": "seventh",
-        "08": "eighth",
-        "09": "ninth",
-        "10": "tenth",
-        "11": "eleventh",
-        "12": "twelth",
-        "13": "thirteenth",
-        "14": "fourteenth",
-        "15": "fifteenth",
-        "16": "sixteenth",
-        "17": "seventeenth",
-        "18": "eighteenth",
-        "19": "nineteenth",
-        "20": "twentieth",
-        "21": "twenty-first",
-        "22": "twenty-second",
-        "23": "twenty-third",
-        "24": "twenty-fourth",
-        "25": "twenty-fifth",
-        "26": "twenty-sixth",
-        "27": "twenty-seventh",
-        "28": "twenty-eighth",
-        "29": "twenty-ninth",
-        "30": "thirtieth",
-        "31": "thirty-first"
+        "01": "First",
+        "02": "Second",
+        "03": "Third",
+        "04": "Fourth",
+        "05": "Fifth",
+        "06": "Sixth",
+        "07": "Seventh",
+        "08": "Eighth",
+        "09": "Ninth",
+        "10": "Tenth",
+        "11": "Eleventh",
+        "12": "Twelth",
+        "13": "Thirteenth",
+        "14": "Fourteenth",
+        "15": "Fifteenth",
+        "16": "Sixteenth",
+        "17": "Seventeenth",
+        "18": "Eighteenth",
+        "19": "Nineteenth",
+        "20": "Twentieth",
+        "21": "Twenty-first",
+        "22": "Twenty-second",
+        "23": "Twenty-third",
+        "24": "Twenty-fourth",
+        "25": "Twenty-fifth",
+        "26": "Twenty-sixth",
+        "27": "Twenty-seventh",
+        "28": "Twenty-eighth",
+        "29": "Twenty-ninth",
+        "30": "Thirtieth",
+        "31": "Thirty-first"
     }
-    return f"{day_dict[day]} of {month_dict[month]}, {year}", [day_dict[day], month_dict[month], year]
+    return f"{day_dict[day]} of {month_dict[month]}, {year}", [
+        day_dict[day], month_dict[month], year
+    ]
 
 
 class BlockBuilder:
@@ -66,6 +68,7 @@ class BlockBuilder:
     time = datetime.now()  # Gets the current time
 
     def __init__(self, block: list = []):
+        """Creates a BlockBuilder object"""
         # self.block = None
         self.block = block
 
@@ -73,13 +76,18 @@ class BlockBuilder:
         """
         Creates a slack divider
 
-        :return: BlockBuilder
+        :usage: divider()
         """
         self.block.append({"type": "divider"})
         return BlockBuilder(block=self.block)
 
     def button(self, name: str = "Button", value: str = "value"):
-        """Creates a button"""
+        """
+        Creates a button
+        
+        :param name: What the button shows on the block
+        :param value: The value sent went clicked
+        """
         self.block.append({
             "type":
             "actions",
@@ -96,7 +104,13 @@ class BlockBuilder:
         return BlockBuilder(block=self.block)
 
     def section(self, text: str = "text"):
-        """Creates a section"""
+        """
+        Creates a section of text
+        
+        :param text: Text within section
+        
+        :usage: section(text="some text")
+        """
         self.block.append({
             "type": "section",
             "text": {
@@ -115,9 +129,8 @@ class BlockBuilder:
         :param name_value: a tuple of tuples of names of buttons and values
         :rtype: BlockBuilder
 
-        :usage: many_buttons(name_value=(("Button1", "b1"),...,("Button_n", "b_n"))
+        :usage: many_buttons(name_value=(["Button_1", "b_1"],...,["Button_n", "b_n"])
         """
-        assert len(name_value) >= 1
 
         button_dict = {"type": "actions", "elements": []}
 
@@ -164,7 +177,14 @@ class BlockBuilder:
     def img_section(self,
                     text: str = "text",
                     img_data: tuple = ("url", "alt text")):
-        assert len(img_data) == 2
+        """
+        Creates a section with an image to the side
+        
+        :param text: The section text
+        :param img_data: a tuple of the url and text if image cannot be loaded
+        
+        :usage: img_section(text="section text", img_data=("www.example.com/image.jpg", "image didn't load"))
+        """
 
         self.block.append({
             "type": "section",
@@ -186,9 +206,18 @@ class BlockBuilder:
                    year: int = time.year,
                    month: int = time.month,
                    day: int = time.day):
+        """
+        creates a datepicker element (default today's date) with a section
+        
+        :param text: Section text
+        :param year: default year (leave alone if you want today's year)
+        :param month: default month (leave alone if you want today's month)
+        :param day: default day (leave alone if you want today's day)
+        
+        :usage: datepicker(text="section text") # * LEAVING THE REST BLANK TO GET TODAY'S DATE AS DEFAULT
+        """
         assert month <= 12
         assert day <= 31
-
         self.block.append({
             "type": "section",
             "text": {
@@ -211,7 +240,16 @@ class BlockBuilder:
     def dropdown(self,
                  section_text: str = "text",
                  button_text: str = "Select an item",
-                 options: tuple = (())):
+                 options: tuple = ([])):
+        """
+        Creates a dropdown menu with a section
+        
+        :param section_text: Section text
+        :param button_text: Dropdown menu's text
+        :param options: dropdown menu options text and value
+        
+        :usage: dropdown(section_text="section text", button_text="dropdown menu text", options=(["option_1", "value_1"],...,["option_n", "value_n"]))
+        """
         assert len(options) > 0
 
         builder = {
@@ -247,7 +285,7 @@ class BlockBuilder:
 
     def overflow(self, text: str = "text", options: tuple = (())):
         """
-
+        Creates an overflow (...) menu
         :rtype: BlockBuilder
         """
         assert len(options) > 0
@@ -279,13 +317,11 @@ class BlockBuilder:
         return BlockBuilder(block=self.block)
 
     def context(self, data: tuple):
+        """creates a context"""
+
         def c_text(text="text", text_type="mrkdwn", emoji=True,
                    verbatim=False):
-            return {
-                "type": text_type,
-                "text": text,
-                "verbatim": verbatim
-            }
+            return {"type": text_type, "text": text, "verbatim": verbatim}
 
         def c_img(url="your url here", alt_text="backup text"):
             return {"type": "image", "image_url": url, "alt_text": alt_text}
@@ -308,6 +344,11 @@ class BlockBuilder:
         self.block.append(json)
 
     def to_block(self):
+        """
+        Converts Blockbuilder object into usable slack block
+        
+        :rtype: Array of dict(s)
+        """
         return self.block
 
     def __str__(self):
