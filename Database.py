@@ -8,7 +8,7 @@ def parse_date(date: str) -> tuple:
     Converts date-string into a tuple, which contains an integer and a split date
 
     :param date: A date-string in the format 'YYYY-MM-DD'
-    :rtype: tuple
+    :rtype: tuple of integer date first, then the date array
     """
     split_date = date.split('-')
     regex_arr = [
@@ -40,58 +40,9 @@ def parse_date(date: str) -> tuple:
     return (int_dates, split_date)
 
 
-# ? Deprecated
-"""def update_or_reset_user(user_id: str,
-                         name: str,
-                         start: int = None,
-                         end: int = None):
-    \"""Resets user if {start} and {end} field are taken. Otherwise changes the values of the user\"""
-    if start is not None and end is not None:
-        assert start <= end
-    else:
-        raise ValueError(
-            f"start ({start}) or end ({end}) value cannot be none")
-    taken(user_id, start, end, 3)
-    user = {
-        'user_id': user_id,
-        'name': name,
-        'start_date': parse_date(start),
-        'end_date': parse_date(end)
-    }
-    users.update_one({'_id': user_id}, {'$set': user}, upsert=True)"""
-
-# DEBUG CODE. # * REMOVE LATER
-# for document in users.find():
-#     pprint(document)
-# test_dates = ("2019-10-12", "2012-04-33", "2019-22-3", "2019-11-09", "2222-12-31")
-# parse_dates(test_dates)
-"""def taken(user_id: str, start: int, end: int, max_amount: int) -> bool:
-    \"""
-    Checks if dates are taken
-
-    :param user_id: originally pulled from slack
-    :param start: start date of availability
-    :param max_amount: start date of availability
-    :param end: end date of availability
-    :rtype: bool
-    \"""
-    assert user_id is not None and start <= end
-
-    current_scheduled = 0
-    for data in users.find({}):
-        parsed_start = parse_date(data.get("start"))
-        parsed_end = parse_date(data.get("end"))
-        if data is not None:
-            if (start >= parsed_start and end <= parsed_end
-                    and current_scheduled < max_amount):
-                current_scheduled += 1
-    return True if current_scheduled <= max_amount else False
-"""
-
-
 class MongoTools():
     """
-    Helper functions for MongoDB, specifically for slack
+    Helper functions for MongoDB, specifically for slack applications
     """
 
     def __init__(self,
@@ -100,6 +51,13 @@ class MongoTools():
                  host="localhost",
                  port=27017,
                  **kwargs):
+        """
+        :param database: Database in MongoDB
+        :param buffer_size: Size of buffer of users
+        :param host: MongoDB host
+        :param port: MongoDB port
+        :param **kwargs: Not implemented yet
+        """
         self.buffer = []
         self.mc = MongoClient(f'mongodb://{host}:{port}/')
         self.database = self.mc[database]
@@ -128,6 +86,9 @@ class MongoTools():
     def remove_user(self, collection, user_id):
         """
         Removes user from specified collecition
+        
+        :param collection: Collection user will be removed from
+        :param user_id: user's ID
         """
         self.database[collection].remove(filter='user_id')
 
@@ -139,11 +100,10 @@ class MongoTools():
             id_list = self.get_ids()
         id_set = set(id_list)
         if len(id_list) == len(id_set):
-            print("no duplicates to remove!")
+            pass  # May add something here later
         elif len(id_list) > len(id_set):
             dif = [s if s not in id_list else None for s in id_set]
             dif = list(filter(lambda x: x, dif))
-            # print(dif)  # * DEBUG
 
             assert len(self.buffer) >= len(dif)
             u_buffer = []
@@ -156,6 +116,11 @@ class MongoTools():
             print('something went wrong...')
 
     def is_duplicates(self, remove_dupes=False) -> bool:
+        """
+        Checks if there are duplicates in buffer
+        
+        :param remove_dupes: If true, will also remove duplicates from buffer. Otherwise will only return a bool 
+        """
         if len(self.buffer) >= 0:
             ids = self.get_ids(self.buffer)
             if ids != set(ids):
@@ -190,7 +155,12 @@ class MongoTools():
         self.clear_buffer()
 
     def __add__(self, other):
-        assert type(other) is list or isinstance(other, MongoTools)  # Fixed
+        """
+        Python '+' operator support
+        
+        :param other: Thing added to buffer. Has to be MongoBuffer or list
+        """
+        assert isinstance(other, list) or isinstance(other, MongoTools)
         if len(self.buffer) + len(other) > self.BUFFER_SIZE:
             self.push_to_collection("scheduled_users")
         self.buffer = [*self.buffer, *other] if type(other) is list else [

@@ -17,8 +17,7 @@ from flask import Flask, request
 from slackeventsapi import SlackEventAdapter
 
 from BlockCreator import BlockBuilder, date_to_words
-from Database import (  # , update_or_reset_user # ? Unkown if needed
-    MongoTools, parse_date)
+from Database import MongoTools, parse_date
 
 app = Flask(__name__)
 
@@ -29,17 +28,21 @@ slack_event_adapter = SlackEventAdapter(  # * Create environment (.env) variable
     os.getenv('SLACK_SECRET'), "/slack/events", app)
 client = slack.WebClient(  # * Create environment variables for your bot token secret
     os.getenv('SLACK_BOT_SECRET'))
-user_client = slack.WebClient(token=os.getenv('SLACK_OAUTH_SECRET'))
+user_client = slack.WebClient(
+    token=os.getenv('SLACK_OAUTH_SECRET'))  # Used to get user data from slack
 scheduler = BackgroundScheduler()
-db = MongoTools(buffer_size=1)
-logging.basicConfig(filename='debug.log',
-                    filemode='a',
-                    format='%(asctime)s,%(msecs)d %(levelname)s %(message)s',
-                    datefmt='%H:%M:%S',
-                    level=logging.DEBUG)
+db = MongoTools(
+    buffer_size=1
+)  # Creates a mongotools instance for helping with user management
+logging.basicConfig(
+    filename='debug.log',
+    filemode='a',
+    format='%(asctime)s,%(msecs)d %(levelname)s %(message)s',
+    datefmt='%H:%M:%S',
+    level=logging.DEBUG)  # Creates logger to make debugging easier
 atexit.register(lambda: scheduler.shutdown())
 
-datepickers = {}
+datepickers = {}  # Used as a cache
 
 
 @slack_event_adapter.on(event="message")
@@ -58,7 +61,8 @@ def handle_message(event_data):
 
         channel = message.get(
             "channel")  # Gets channel that message was sent in
-        if message.get("text") == "on call":  # Command
+        if message.get(
+                "text") == "on call":  # Command to schedule when on call
 
             text = f"Hello <@{user}>! select the start date of the days you will be on call"
 
@@ -73,7 +77,9 @@ def handle_message(event_data):
                                 "blocks": block
                             })
             block = None
-        if message.get("text") == "view on call":
+        if message.get(
+                "text"
+        ) == "view on call":  # See who is on call on whichever dates
             block = BlockBuilder(
                 []).section(text='*Dates People are on Call*').divider()
 
@@ -110,7 +116,8 @@ def handle_message(event_data):
                             })
 
             block = None
-        if message.get("text") == "reset on call":
+        if message.get(
+                "text") == "reset on call":  # Remove user from on call list
             db.database['scheduled_users'].update_one(
                 filter={'user_id': user},
                 update={'$set': {
@@ -122,7 +129,7 @@ def handle_message(event_data):
                 user=user,
                 channel=channel,
                 text=f'Sucessfully removed you from on call list')
-        if message.get("text") == "help me schedule":
+        if message.get("text") == "help me schedule":  # Help Command
             block = BlockBuilder([]).section(
                 text='_Beep Boop_. I am a bot who schedules things!'
             ).divider().section(
@@ -252,8 +259,8 @@ def handle_button_click(
         user,
         channel,
         ts,
-):  # TODO: Fix this horrible code
-    # if value == 'no0' or value == 'yes0': # * Not needed
+):
+
     if value == 'yes0':
         block = BlockBuilder([]).section(
             text=f'Now select the end date, <@{user}>.').divider().datepicker(
@@ -284,8 +291,6 @@ def handle_button_click(
                             channel
                         })
 
-
-# if value == 'no1' or value == 'yes1': # * Not needed
     elif value == 'yes1':
         client.api_call(
             "chat.postEphemeral",
@@ -294,7 +299,7 @@ def handle_button_click(
                     'pretext':
                     ':tada: *Scheduling message...* :tada:',
                     'text':
-                    'Please allow up to 15 minutes for your scheduled call to be created'
+                    'Please allow up to `10` minutes for your scheduling to be saved.'
                 }],
                 'user':
                 user,
@@ -316,31 +321,27 @@ def handle_button_click(
                         })
 
 
-def handle_date_selection(start_date, end_date) -> tuple:
-    start = parse_date(start_date)[1]
-    end = parse_date(end_date)[1]
-
-    return (start, end)
-
-
 def reset_log():
-    with open('debug.log', 'w+') as f:  # ? Should I use 'with' statement here?
+    """
+    Creates empty log file if none, else clears existing log
+    """
+    with open('debug.log', 'w+') as f:
         f.close()
 
 
 if __name__ == "__main__":
-    reset_log()
+    reset_log()  # Resets/creates log on startup
 
     scheduler.add_job(func=reset_log,
                       trigger='cron',
                       year='*',
                       month='*',
                       day='*',
-                      hour='0')
+                      hour='0')  # Adds job to reset logs @ 12:00 AM Every Day
     scheduler.add_job(
         func=lambda: db.push_to_collection(collection="scheduled_users"),
         trigger='interval',
-        minutes=1)
+        minutes=10)  # Pushes to collection every 10 minutes
     scheduler.start()
     logging.info('started scheduled jobs successfully')
 
