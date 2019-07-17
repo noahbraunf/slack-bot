@@ -272,6 +272,7 @@ def handle_button_click(
         ts,
 ):
     """
+    Handles user interaction with date selection block interaction
     """
     if value == 'yes0':
         block = BlockBuilder([]).section(
