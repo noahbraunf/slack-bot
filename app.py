@@ -355,7 +355,7 @@ def handle_button_click(
 
 
 if __name__ == "__main__":
-    reset_log()  # Resets/creates log on startup
+    open('debug.log', 'w+').close()
 
     scheduler.add_job(func=lambda: open('debug.log', 'w+').close(),
                       trigger='cron',
