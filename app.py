@@ -155,6 +155,21 @@ def handle_message(event_data):
             block = None
 
 
+@slack_event_adapter.on(event="message.im")
+def handle_dm(event_data):
+    logging.debug(pformat(event_data))
+    event = event_data.get("event")
+    user_id = event.get("user")
+    if user_id:
+        im_channel = client.im_open(user=user_id)["channel"]["id"]
+        channel = event.get('channel')
+        text = event.get('text')
+        logging.debug(pformat(im_channel))
+        print(pformat(im_channel))
+
+        client.chat_postMessage(channel=im_channel, text="hello to you!")
+
+
 @app.route("/slack/interactive", methods=['GET', 'POST'])
 def handle_interaction():
     """Sends payload whenever interactive element (button, etc.) is pressed"""
@@ -273,6 +288,11 @@ def handle_button_click(
 ):
     """
     Handles user interaction with date selection block interaction
+    
+    :param value: button value
+    :param user: user id
+    :param channel: channel posting
+    :ts: timestamp of actual message
     """
     if value == 'yes0':
         block = BlockBuilder([]).section(
@@ -334,18 +354,10 @@ def handle_button_click(
                         })
 
 
-def reset_log():
-    """
-    Creates empty log file if none, else clears existing log
-    """
-    with open('debug.log', 'w+') as f:
-        f.close()
-
-
 if __name__ == "__main__":
     reset_log()  # Resets/creates log on startup
 
-    scheduler.add_job(func=reset_log,
+    scheduler.add_job(func=lambda: open('debug.log', 'w+').close(),
                       trigger='cron',
                       year='*',
                       month='*',
