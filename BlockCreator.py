@@ -65,7 +65,6 @@ def date_to_words(year: str, month: str, day: str) -> tuple:
 
 class BlockBuilder:
     """A simple python script for creating slack blocks easily and quickly"""
-    time = datetime.now()  # Gets the current time
 
     def __init__(self, block: list = []):
         """Creates a BlockBuilder object"""
@@ -201,11 +200,7 @@ class BlockBuilder:
 
         return BlockBuilder(block=self.block)
 
-    def datepicker(self,
-                   text: str = "text",
-                   year: int = time.year,
-                   month: int = time.month,
-                   day: int = time.day):
+    def datepicker(self, text: str = "text", year=None, month=None, day=None):
         """
         creates a datepicker element (default today's date) with a section
         
@@ -216,8 +211,9 @@ class BlockBuilder:
         
         :usage: datepicker(text="section text") # * LEAVING THE REST BLANK TO GET TODAY'S DATE AS DEFAULT
         """
-        assert month <= 12
-        assert day <= 31
+        time = datetime.now()
+        # assert int(month) <= 12
+        # assert int(day) <= 31
         self.block.append({
             "type": "section",
             "text": {
@@ -226,7 +222,8 @@ class BlockBuilder:
             },
             "accessory": {
                 "type": "datepicker",
-                "initial_date": f"{year}-{month}-{day}",
+                "initial_date": f"{time.year}-{time.month}-{time.day}",
+                #"initial_date": "2019-8-5",
                 "placeholder": {
                     "type": "plain_text",
                     "text": "Select a date",
@@ -250,7 +247,7 @@ class BlockBuilder:
         
         :usage: dropdown(section_text="section text", button_text="dropdown menu text", options=(["option_1", "value_1"],...,["option_n", "value_n"]))
         """
-        assert len(options) > 0
+        # assert len(options) > 0
 
         builder = {
             "type": "section",

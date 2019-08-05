@@ -7,7 +7,7 @@ def parse_date(date: str) -> tuple:
     """
     Converts date-string into a tuple, which contains an integer and a split date
 
-    :param date: A date-string in the format 'YYYY-MM-DD'
+    :param date: A date-string in the format `YYYY-MM-DD`\n
     :rtype: tuple of integer date first, then the date array
     """
     split_date = date.split('-')

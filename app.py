@@ -54,9 +54,9 @@ def handle_message(event_data):
     logging.debug(pformat(event_data))  # * DEBUG
 
     message = event_data["event"]  # gets event payload
+    user = message.get("user")  # Gets user id of user or None if not a user
 
-    if message.get("user"):  # Makes sure that message is not sent by a bot
-        user = message.get("user")  # Gets user id of user
+    if user:  # Makes sure that message is not sent by a bot
 
         channel = message.get(
             "channel")  # Gets channel that message was sent in
@@ -70,15 +70,12 @@ def handle_message(event_data):
                     name_value=(("Next", "yes0"), ("Cancel",
                                                    "no0"))).to_block()  # Block
 
-            client.api_call(api_method="chat.postMessage",
-                            json={
-                                "channel": channel,
-                                "blocks": block
-                            })
+            client.chat_postMessage(channel=channel, blocks=block)
             block = None
         if message.get(
                 "text"
         ) == "view on call":  # See who is on call on whichever dates
+
             db.push_to_collection('scheduled_users')
 
             block = BlockBuilder(
@@ -106,12 +103,8 @@ def handle_message(event_data):
                                     'img', user_images[users['user_id']],
                                     '_error displaying user image_'
                                 ), ('text',
-                                    f'<@{users["user_id"]}>. _Contact them if you have any concerns_'
+                                    f'<@{users["user_id"]}> is on call from the *{date_to_words(start_date[0], start_date[1], start_date[2])[0]}* to the *{date_to_words(end_date[0], end_date[1], end_date[2])[0]}*.\n_Contact them if you have any concerns_'
                                     )))
-                                block.section(
-                                    text=
-                                    f'>from the *{date_to_words(start_date[0], start_date[1], start_date[2])[0]}* to the *{date_to_words(end_date[0], end_date[1], end_date[2])[0]}*'
-                                ).divider()
 
             block = block.to_block()
             logging.debug(pformat(user_images))
@@ -123,8 +116,10 @@ def handle_message(event_data):
                             })
 
             block = None
+
         if message.get(
                 "text") == "reset on call":  # Remove user from on call list
+
             db.database['scheduled_users'].update_one(
                 filter={'user_id': user},
                 update={'$set': {
@@ -136,7 +131,9 @@ def handle_message(event_data):
                 user=user,
                 channel=channel,
                 text=f'Sucessfully removed you from on call list')
+
         if message.get("text") == "help me schedule":  # Help Command
+
             block = BlockBuilder([]).section(
                 text='_Beep Boop_. I am a bot who schedules things!'
             ).divider().section(
@@ -155,19 +152,18 @@ def handle_message(event_data):
             block = None
 
 
-@slack_event_adapter.on(event="message.im")
-def handle_dm(event_data):
-    logging.debug(pformat(event_data))
-    event = event_data.get("event")
-    user_id = event.get("user")
-    if user_id:
-        im_channel = client.im_open(user=user_id)["channel"]["id"]
-        channel = event.get('channel')
-        text = event.get('text')
-        logging.debug(pformat(im_channel))
-        print(pformat(im_channel))
-
-        client.chat_postMessage(channel=im_channel, text="hello to you!")
+# @slack_event_adapter.on(event="message.im")
+# def handle_dm(event_data):
+#     logging.debug(pformat(event_data))
+#     event = event_data.get("event")
+#     user_id = event.get("user")
+#     if user_id:
+#         im_channel = client.im_open(user=user_id)["channel"]["id"]
+#         channel = event.get('channel')
+#         text = event.get('text')
+#         logging.debug(pformat(im_channel))
+#         print(pformat(im_channel))
+#         client.chat_postMessage(channel=im_channel, text="hello to you!")
 
 
 @app.route("/slack/interactive", methods=['GET', 'POST'])
@@ -198,7 +194,7 @@ def handle_interaction():
     logging.debug(pformat(req))
     global datepickers
 
-    if actions[0].get('type') == 'button':
+    if actions[0].get('type') == 'button': # Uses a dict-cache to save values of previous datepicker
         handle_button_click(value=actions[0].get('value'),
                             user=user['id'],
                             channel=channel,
