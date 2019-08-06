@@ -73,7 +73,7 @@ def handle_message(event_data):
 
             client.chat_postMessage(channel=channel, blocks=block)
             block = None
-        if message.get(
+        elif message.get(
                 "text"
         ) == "view on call":  # See who is on call on whichever dates
 
@@ -119,7 +119,7 @@ def handle_message(event_data):
 
             block = None
 
-        if message.get(
+        elif message.get(
                 "text") == "reset on call":  # Remove user from on call list
 
             db.database['scheduled_users'].update_one(
@@ -134,13 +134,16 @@ def handle_message(event_data):
                 channel=channel,
                 text=f'Sucessfully removed you from on call list')
 
-        if message.get("text") == "help me schedule":  # Help Command
+        elif message.get("text") == "help me schedule":  # Help Command
 
             block = BlockBuilder([]).section(
                 text='_Beep Boop_. I am a bot who schedules things!'
             ).divider().section(
                 text=
                 '*Command*: `view on call`\n\nThis command displays who is on call on certain dates.\n>Usage: type `view on call` to see who is on call.'
+            ).section(
+                text=
+                '*Command*: `view me`\n\nThis command shows only when you are on call.\n>Usage: type `view me` to view when you are on call.'
             ).section(
                 text=
                 '*Command*: `on call`\n\nThis command allows you to pick the dates you are on call.\n>Usage: type `on call` and follow the steps I display!'
@@ -150,6 +153,29 @@ def handle_message(event_data):
             ).to_block()
 
             client.chat_postEphemeral(user=user, channel=channel, blocks=block)
+
+            block = None
+        elif message.get("text") == "view me":
+            user_data = db.database['scheduled_users'].find_one(
+                {'user_id': user})
+            start_date = user_data.get("start_date")
+            end_date = user_data.get("end_date")
+            if not start_date and not end_date:
+                client.chat_postMessage(
+                    channel=channel,
+                    text=
+                    "You haven't specified when you will be on call! To specify, please type `on call` and follow the steps it gives you."
+                )
+                return
+
+            block = BlockBuilder(
+                []
+            ).section(text="Showing when *you* are on call").divider().section(
+                text=
+                f"You are on call from the *{date_to_words(start_date[0], start_date[1], start_date[2])[0]}* to the *{date_to_words(end_date[0], end_date[1], end_date[2])[0]}*.\n>If you would like to change this, type `on call`. If you would like to remove yourself from the on call list, type `reset on call`."
+            ).to_block()
+
+            client.chat_postMessage(channel=channel, blocks=block)
 
             block = None
 
@@ -211,7 +237,7 @@ def handle_interaction():
                 text=
                 f'<@{user["id"]}> wants to talk to you about when you\'re on call. Please shoot them a dm.'
             )
-            re
+            return 'action successful'
 
         if actions[0].get('value') == "no0" or actions[0].get(
                 'value') == "no1" or actions[0].get('value') == "yes1":
