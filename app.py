@@ -15,6 +15,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
 from flask import Flask, request
 from slackeventsapi import SlackEventAdapter
+import re
 
 from BlockCreator import BlockBuilder, date_to_words
 from Database import MongoTools, parse_date
@@ -104,7 +105,8 @@ def handle_message(event_data):
                                     '_error displaying user image_'
                                 ), ('text',
                                     f'<@{users["user_id"]}> is on call from the *{date_to_words(start_date[0], start_date[1], start_date[2])[0]}* to the *{date_to_words(end_date[0], end_date[1], end_date[2])[0]}*.\n_Contact them if you have any concerns_'
-                                    )))
+                                    ))).button(name="Ping",
+                                               value=f'{users["user_id"]}')
 
             block = block.to_block()
             logging.debug(pformat(user_images))
@@ -194,11 +196,23 @@ def handle_interaction():
     logging.debug(pformat(req))
     global datepickers
 
-    if actions[0].get('type') == 'button': # Uses a dict-cache to save values of previous datepicker
+    if actions[0].get(
+            'type'
+    ) == 'button':  # Uses a dict-cache to save values of previous datepicker
         handle_button_click(value=actions[0].get('value'),
                             user=user['id'],
                             channel=channel,
                             ts=m_ts)
+        if re.match(re.compile(r"\w{9}"), actions[0].get('value')):
+            dm_payload = client.im_open(user=actions[0].get('value'))
+
+            client.chat_postMessage(
+                channel=dm_payload['channel']['id'],
+                text=
+                f'<@{user["id"]}> wants to talk to you about when you\'re on call. Please shoot them a dm.'
+            )
+            re
+
         if actions[0].get('value') == "no0" or actions[0].get(
                 'value') == "no1" or actions[0].get('value') == "yes1":
             if actions[0].get('value') == "yes1":
