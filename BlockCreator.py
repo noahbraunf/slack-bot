@@ -5,7 +5,7 @@ from pymongo import MongoClient
 def date_to_words(year: str, month: str, day: str) -> tuple:
     """
     Converts day to word
-
+    
 
     :param year, month, day: year, month, and day
     :rtype: tuple
@@ -67,7 +67,7 @@ class BlockBuilder:
     """A simple python script for creating slack blocks easily and quickly"""
 
     def __init__(self, block: list = []):
-        """Creates a BlockBuilder object"""
+        """Creates a `BlockBuilder` object"""
         # self.block = None
         self.block = block
 
@@ -75,7 +75,10 @@ class BlockBuilder:
         """
         Creates a slack divider
 
-        :usage: divider()
+        :usage: 
+        ```python
+        BlockBuilder([]).divider()
+        ```
         """
         self.block.append({"type": "divider"})
         return BlockBuilder(block=self.block)
@@ -86,6 +89,10 @@ class BlockBuilder:
         
         :param name: What the button shows on the block
         :param value: The value sent went clicked
+        
+        :usage:
+        ```python
+        BlockBuilder([]).button(name='Display Value', value='Value sent when clicked')
         """
         self.block.append({
             "type":
@@ -108,7 +115,10 @@ class BlockBuilder:
         
         :param text: Text within section
         
-        :usage: section(text="some text")
+        :usage: 
+        ```python
+        BlockBuilder([]).section(text="some text")
+        ```
         """
         self.block.append({
             "type": "section",
@@ -128,7 +138,10 @@ class BlockBuilder:
         :param name_value: a tuple of tuples of names of buttons and values
         :rtype: BlockBuilder
 
-        :usage: many_buttons(name_value=(["Button_1", "b_1"],...,["Button_n", "b_n"])
+        :usage: 
+        ```python
+        many_buttons(name_value=(["Button_1", "b_1"],...,["Button_n", "b_n"])
+        ```
         """
 
         button_dict = {"type": "actions", "elements": []}
@@ -156,9 +169,11 @@ class BlockBuilder:
         :param img_data: url and alt text
         :rtype: BlockBuilder
 
-        :usage: img(tile="an image", img_data=("https://url.com/img.png", "text for when image doesn't load")
+        :usage: 
+        ```python
+        BlockBuilder([]).img(tile="an image", img_data=("https://url.com/img.png", "text for when image doesn't load")
+        ```
         """
-        assert len(img_data) == 2
 
         self.block.append({
             "type": "image",
@@ -182,7 +197,10 @@ class BlockBuilder:
         :param text: The section text
         :param img_data: a tuple of the url and text if image cannot be loaded
         
-        :usage: img_section(text="section text", img_data=("www.example.com/image.jpg", "image didn't load"))
+        :usage: 
+        ```python
+        BlockBuilder([]).img_section(text="section text", img_data=("www.example.com/image.jpg", "fallback text"))
+        ```
         """
 
         self.block.append({
@@ -200,7 +218,12 @@ class BlockBuilder:
 
         return BlockBuilder(block=self.block)
 
-    def datepicker(self, text: str = "text", year=None, month=None, day=None):
+    def datepicker(self,
+                   text: str = "text",
+                   placeholder: str = "Select a date",
+                   year=None,
+                   month=None,
+                   day=None):
         """
         creates a datepicker element (default today's date) with a section
         
@@ -209,11 +232,13 @@ class BlockBuilder:
         :param month: default month (leave alone if you want today's month)
         :param day: default day (leave alone if you want today's day)
         
-        :usage: datepicker(text="section text") # * LEAVING THE REST BLANK TO GET TODAY'S DATE AS DEFAULT
+        :usage: 
+        ```python
+        BlockBuilder([]).datepicker(text="section text") # * LEAVING THE REST BLANK TO GET TODAY'S DATE AS DEFAULT
+        ```
         """
         time = datetime.now()
-        # assert int(month) <= 12
-        # assert int(day) <= 31
+
         self.block.append({
             "type": "section",
             "text": {
@@ -222,8 +247,8 @@ class BlockBuilder:
             },
             "accessory": {
                 "type": "datepicker",
-                "initial_date": f"{time.year}-{time.month}-{time.day}",
-                #"initial_date": "2019-8-5",
+                "initial_date":
+                f"{year if year else time.year}-{month if month else time.month}-{day if day else time.day}",
                 "placeholder": {
                     "type": "plain_text",
                     "text": "Select a date",
@@ -245,9 +270,11 @@ class BlockBuilder:
         :param button_text: Dropdown menu's text
         :param options: dropdown menu options text and value
         
-        :usage: dropdown(section_text="section text", button_text="dropdown menu text", options=(["option_1", "value_1"],...,["option_n", "value_n"]))
+        :usage: 
+        ```python
+        BlockBuilder([]).dropdown(section_text="section text", button_text="dropdown menu text", options=(["option_1", "value_1"],...,["option_n", "value_n"]))
+        ```
         """
-        # assert len(options) > 0
 
         builder = {
             "type": "section",
