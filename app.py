@@ -2,12 +2,13 @@ import atexit
 import json
 import logging
 import os
+import re
 from collections import defaultdict
+from datetime import datetime
 from os.path import dirname, join
 from pprint import pformat
 from urllib.parse import quote
 from urllib.request import unquote
-from datetime import datetime
 
 import requests
 import slack
@@ -15,7 +16,6 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
 from flask import Flask, request
 from slackeventsapi import SlackEventAdapter
-import re
 
 from BlockCreator import BlockBuilder, date_to_words
 from Database import MongoTools, parse_date
@@ -42,7 +42,7 @@ logging.basicConfig(
     level=logging.DEBUG)  # Creates logger to make debugging easier
 atexit.register(lambda: scheduler.shutdown())
 
-datepickers = {}  # Used as a cache
+datepickers = {}  # Used as a cache for selecting dates.
 
 
 @slack_event_adapter.on(event="message")
@@ -160,7 +160,7 @@ def handle_message(event_data):
                 {'user_id': user})
             start_date = user_data.get("start_date")
             end_date = user_data.get("end_date")
-            if not start_date and not end_date:
+            if not (start_date or end_date):
                 client.chat_postMessage(
                     channel=channel,
                     text=
